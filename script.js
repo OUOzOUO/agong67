@@ -14,8 +14,9 @@ const searchClearBtn = document.getElementById('searchClearBtn');
 
 // --- 系統全域變數 ---
 let allMemes = []; 
-let currentViewType = 'image'; 
-let currentUploadFileType = 'image'; 
+// ✨ 修正：優先從瀏覽器記憶體讀取上一次停留的展區，如果從未造訪過才預設為 'image'
+let currentViewType = localStorage.getItem('agong67_last_view') || 'image'; 
+let currentUploadFileType = 'image';
 
 // ==========================================================================
 // SPA 視圖切換與側邊欄控制邏輯
@@ -62,6 +63,7 @@ navBtns.forEach(btn => {
 
     if (targetId === 'galleryView' && targetType) {
       currentViewType = targetType;
+      localStorage.setItem('agong67_last_view', targetType);
       if (galleryTitle) galleryTitle.innerHTML = btn.innerHTML; 
       if (searchInput) searchInput.value = ''; 
       renderGallery(); 
@@ -336,5 +338,25 @@ if (searchInput && searchClearBtn) {
   });
 }
 
-// 啟動引擎
+// ==========================================================================
+// ✨ 新增：網頁初始化選單高亮與標題同步函數，防止重新整理後選單錯位
+// ==========================================================================
+function initViewHighlight() {
+  const targetBtn = document.querySelector(`.nav-btn[data-type="${currentViewType}"]`);
+  if (targetBtn) {
+    // 1. 移除所有選單的 active 高亮
+    navBtns.forEach(b => {
+      if(b.getAttribute('data-target')) b.classList.remove('active');
+    });
+    // 2. 為記住的展區按鈕加上高亮
+    targetBtn.classList.add('active');
+    // 3. 同步首頁的大標題文字
+    if (galleryTitle) galleryTitle.innerHTML = targetBtn.innerHTML;
+  }
+}
+
+// 執行初始化高亮，再啟動資料庫載入
+initViewHighlight();
+
+// 網頁開啟時自動載入
 window.loadGallery();
