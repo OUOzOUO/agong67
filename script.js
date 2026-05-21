@@ -220,7 +220,7 @@ function renderGallery() {
   const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
   // 2. 篩選目前要顯示的藏品
-  const filteredMemes = loadedMemes.filter(meme => {
+  const filteredMemes = allMemes.filter(meme => {
     const itemType = meme.type || 'image';
     if (itemType !== currentViewType) return false;
 
