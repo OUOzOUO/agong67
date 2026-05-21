@@ -13,60 +13,38 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./favicon.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./favicon.png">
   <link rel="apple-touch-icon" href="./favicon.png">
-  
   <link rel="manifest" href="./manifest.json">
-  
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="阿公67網">
   <meta name="theme-color" content="#1a5e63">
 
-  <link rel="stylesheet" href="style.css?v=67.10">
+  <link rel="stylesheet" href="style.css?v=67.12">
 </head>
 <body>
 
   <div id="menuToggle" class="menu-toggle" title="打開導覽選單">
     <i class="fas fa-bars"></i>
   </div>
-
   <div id="drawerOverlay" class="drawer-overlay"></div>
-
   <div id="navDrawer" class="drawer">
-    <div id="closeDrawer" class="close-drawer">
-      <i class="fas fa-times"></i>
-    </div>
-    
+    <div id="closeDrawer" class="close-drawer"><i class="fas fa-times"></i></div>
     <div class="drawer-header">
       <h2>阿公<span class="highlight">67</span>網</h2>
       <p>數位迷因收藏室</p>
     </div>
-
-    <div id="userStatusArea" class="user-status-area" style="display: none;">
-      </div>
+    
+    <div id="userStatusArea" class="user-status-area" style="display: none;"></div>
 
     <nav class="drawer-nav">
-      <button class="nav-btn active" data-target="galleryView" data-type="image">
-        <i class="fas fa-image"></i> 🖼️ 靜態圖片區
-      </button>
-      <button class="nav-btn" data-target="galleryView" data-type="gif">
-        <i class="fas fa-bolt"></i> ⚡ 動態 GIF 區
-      </button>
-      <button class="nav-btn" data-target="galleryView" data-type="video">
-        <i class="fas fa-video"></i> 🎬 短影片專區
-      </button>
-      <button class="nav-btn" data-target="uploadView" id="navUploadBtn" style="display: none;">
-        <i class="fas fa-cloud-upload-alt"></i> ☁️ 貢獻新藏品
-      </button>
-      <button class="nav-btn" data-target="adminView" id="adminNavBtn" style="display: none;">
-        <i class="fas fa-user-shield"></i> ⚙️ 大總管後台
-      </button>
-      <button class="nav-btn" id="loginNavBtn">
-        <i class="fas fa-sign-in-alt"></i> <span>會員登入</span>
-      </button>
-      <button class="nav-btn" id="logoutNavBtn" style="display: none;">
-        <i class="fas fa-sign-out-alt"></i> <span>安全登出</span>
-      </button>
+      <button class="nav-btn active" data-target="galleryView" data-type="image"><i class="fas fa-image"></i> 🖼️ 靜態圖片區</button>
+      <button class="nav-btn" data-target="galleryView" data-type="gif"><i class="fas fa-bolt"></i> ⚡ 動態 GIF 區</button>
+      <button class="nav-btn" data-target="galleryView" data-type="video"><i class="fas fa-video"></i> 🎬 短影片專區</button>
+      <button class="nav-btn" data-target="uploadView" id="navUploadBtn" style="display: none;"><i class="fas fa-cloud-upload-alt"></i> ☁️ 貢獻新藏品</button>
+      <button class="nav-btn" data-target="adminView" id="adminNavBtn" style="display: none;"><i class="fas fa-user-shield"></i> ⚙️ 大總管後台</button>
+      <button class="nav-btn" id="loginNavBtn"><i class="fas fa-sign-in-alt"></i> <span>會員登入</span></button>
+      <button class="nav-btn" id="logoutNavBtn" style="display: none;"><i class="fas fa-sign-out-alt"></i> <span>安全登出</span></button>
     </nav>
   </div>
 
@@ -75,6 +53,7 @@
       <div class="header-content">
         <h1>阿公<span class="highlight">67</span>網</h1>
         <p class="subtitle">阿公的數位迷因收藏室</p>
+        
         <div class="search-container">
           <div class="search-wrapper">
             <i class="fas fa-search search-icon"></i>
@@ -85,9 +64,7 @@
       </div>
     </header>
     <main>
-      <div class="gallery-meta">
-        <h2 id="galleryTitle"><i class="fas fa-image"></i> 🖼️ 靜態圖片區</h2>
-      </div>
+      <div class="gallery-meta"><h2 id="galleryTitle"><i class="fas fa-image"></i> 🖼️ 靜態圖片區</h2></div>
       <div id="gallery" class="gallery-container"></div>
     </main>
   </div>
@@ -103,8 +80,7 @@
           <input type="file" id="imageInput" accept="image/*,video/*">
           <div class="file-drop-area">
             <label for="imageInput" class="custom-file-upload">
-              <i class="fas fa-file-upload fa-3x"></i><br>
-              點擊這裡選取您的藏品檔案
+              <i class="fas fa-file-upload fa-3x"></i><br>點擊這裡選取您的藏品檔案
             </label>
             <span id="fileNameDisplay" class="file-name-display">尚未選擇檔案</span>
             <span id="fileTypeBadge" class="file-type-badge" style="display: none;"></span>
@@ -184,8 +160,8 @@
     <p>© 6767 阿公六七網 你的67好夥伴</p>
   </footer>
 
-  <script src="auth.js?v=67.10"></script>
-  <script src="admin.js?v=67.10"></script>
-  <script src="script.js?v=67.10"></script>
+  <script src="auth.js?v=67.12"></script>
+  <script src="admin.js?v=67.12"></script>
+  <script src="script.js?v=67.12"></script>
 </body>
 </html>
