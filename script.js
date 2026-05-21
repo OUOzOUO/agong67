@@ -298,11 +298,13 @@ function renderGallery() {
           </div>
         `;
       } else if (currentViewType === 'gif') {
-        // ⚡ GIF 終極解法：使用 img 標籤 + Google 圖片專屬直連 (uc?id=)
-        // 這樣瀏覽器會把它當成一張純圖片，100% 自動重播，沒有任何黑框與播放按鈕！
-        const directImageUrl = fileId ? `https://drive.google.com/uc?id=${fileId}` : safeUrl;
+        // ⚡ GIF 妥協解法：Google 嚴格封殺直連，必須改回 iframe 官方播放器。
+        // 手機版 Google 播放器強制需「點擊」才會播放 GIF。
+        const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
         mediaHTML = `
-          <img class="card-media gif-image" src="${directImageUrl}" alt="${safeQuoteHTML}">
+          <div class="media-wrapper gif-wrapper">
+            <iframe class="card-media gif-iframe" src="${iframeUrl}" allow="autoplay" style="border:none; background:#000;"></iframe>
+          </div>
         `;
       }
 

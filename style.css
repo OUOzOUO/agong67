@@ -965,13 +965,24 @@ footer {
   display: block;
 }
 
-/* ⚡ GIF 專屬樣式：回歸一般圖片的完美比例裁切，100% 滿版無黑邊 */
-.card-media.gif-image {
+/* ⚡ GIF 專屬容器：隱藏 Google 播放器的上下黑邊，並允許點擊播放 */
+.media-wrapper.gif-wrapper {
+  position: relative;
   width: 100%;
   height: 220px;
-  object-fit: cover;
+  background: #000;
+  overflow: hidden;
   border-bottom: 2px solid var(--bg-color);
-  display: block;
+}
+
+.card-media.gif-iframe {
+  width: 100% !important;
+  height: 135% !important; /* ✨ 放大高度，把 Google 原生的醜白邊/黑邊擠出外框 */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 💡 注意：我們在這裡不加 pointer-events: none，這樣你才能用手指點擊播放！ */
 }
 
 /* 防止靜態圖卡片被點擊縮放動畫干擾 */
