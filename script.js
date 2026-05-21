@@ -200,13 +200,28 @@ window.loadGallery = function() {
     });
 }
 
+// ==========================================================================
+// 渲染畫廊 (全端完整修復版：修復卡片消失、影片黑邊、GIF凍結問題)
+// ==========================================================================
 function renderGallery() {
+  const gallery = document.getElementById('gallery');
+  const galleryTitle = document.getElementById('galleryTitle');
   if (!gallery) return;
-  gallery.innerHTML = '';
-  const keyword = searchInput ? searchInput.value.toLowerCase() : '';
 
-  const filteredMemes = allMemes.filter(meme => {
-    const itemType = meme.type || 'image'; 
+  gallery.innerHTML = '';
+
+  // 1. 動態更新展區標題
+  if (galleryTitle) {
+    if (currentViewType === 'image') galleryTitle.innerHTML = '<i class="fas fa-image"></i> 🖼️ 靜態圖片區';
+    else if (currentViewType === 'gif') galleryTitle.innerHTML = '<i class="fas fa-bolt"></i> ⚡ 動態 GIF 區';
+    else if (currentViewType === 'video') galleryTitle.innerHTML = '<i class="fas fa-video"></i> 🎬 短影片專區';
+  }
+
+  const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+  // 2. 篩選目前要顯示的藏品
+  const filteredMemes = loadedMemes.filter(meme => {
+    const itemType = meme.type || 'image';
     if (itemType !== currentViewType) return false;
 
     if (!keyword) return true;
@@ -216,25 +231,25 @@ function renderGallery() {
   });
 
   if (filteredMemes.length === 0) {
-    gallery.innerHTML = '<p>這個展區目前空空如也，或者找不到符合的關鍵字 QQ</p>';
+    gallery.innerHTML = '<p style="text-align:center; width:100%; color:#7f8c8d; margin-top: 20px;">此區目前還沒有任何藏品哦！</p>';
     return;
   }
 
+  // 3. 逐一產生卡片並貼上畫面
   filteredMemes.forEach(meme => {
     const card = document.createElement('div');
     card.className = 'card';
-    
-    // ✨ 新增：動態產生標籤的 HTML (如果有標籤的話)
+
+    // 產生標籤 HTML
     let tagsHTML = '';
     if (meme.tags && meme.tags.length > 0 && meme.tags[0] !== "") {
-      // 將陣列裡的每個標籤加上 # 號並包裝進 <span> 中
       const tagsList = meme.tags.map(t => `<span class="tag-badge">#${t.trim()}</span>`).join('');
       tagsHTML = `<div class="card-tags">${tagsList}</div>`;
     }
-    
+
+    // A. 處理靜態圖片
     if (currentViewType === 'image') {
       card.classList.add('interactive-card');
-      // 將 <p> 的 class 加上 card-title，並在下方接上 tagsHTML
       card.innerHTML = `
         <img class="card-media" src="${meme.url}" alt="${meme.quote}">
         <p class="card-title">${meme.quote}</p>
@@ -260,33 +275,19 @@ function renderGallery() {
         }
       });
       
+    // B. 處理 GIF 動圖與短影片 (套用防黑邊智慧外殼)
     } else if (currentViewType === 'video' || currentViewType === 'gif') {
       const fileIdMatch = meme.url.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
       const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
-      
-      let mediaHTML = '';
 
-      } else if (currentViewType === 'video' || currentViewType === 'gif') {
-      const fileIdMatch = meme.url.match(/id=([^&]+)/);
-      const fileId = fileIdMatch ? fileIdMatch[1] : '';
-      const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
-      
-      // ✨ 核心修正：放棄會踩到流量牆的下載網址，全面回歸 Google Sheets 認可最穩定的 preview 節點
       const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
-      
       let mediaHTML = '';
 
       if (currentViewType === 'video') {
-        // 🎬 影片專用外殼：加上 allow="autoplay" 確保相容性
-        mediaHTML = `
-          <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
-        `;
+        mediaHTML = `<iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>`;
       } else if (currentViewType === 'gif') {
-        // ⚡ GIF 專用外殼：利用 Google 原生內嵌網頁，這才是最安全的做法
-        mediaHTML = `
-          <iframe class="card-media gif-iframe" src="${iframeUrl}" style="border:none; background:#000; pointer-events: none;"></iframe>
-        `;
+        mediaHTML = `<iframe class="card-media gif-iframe" src="${iframeUrl}" style="border:none; background:#000; pointer-events: none;"></iframe>`;
       }
 
       card.innerHTML = `
@@ -296,34 +297,23 @@ function renderGallery() {
         <a href="${meme.url}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
       `;
     }
-    // ==========================================================================
-    // ✨ 新增：點擊標籤自動搜尋功能
-    // ==========================================================================
-    // 抓取這張卡片裡面剛剛產生的所有小標籤
+
+    // 4. 綁定標籤點擊搜尋事件
     const tagBadges = card.querySelectorAll('.tag-badge');
     tagBadges.forEach(badge => {
       badge.addEventListener('click', (event) => {
-        // 1. 阻止事件冒泡！防止點擊標籤時，同時觸發了圖片卡片的「複製網址/下載」功能
         event.stopPropagation();
-        
-        // 2. 取得標籤的文字（例如 "#牛"），並把前方的 "#" 號去掉變成 "牛"
         const tagText = badge.innerText.replace('#', '').trim();
-        
-        // 3. 把這個標籤文字自動塞進畫面上方的搜尋框中
-        if (searchInput) {
-          searchInput.value = tagText;
-          if (searchClearBtn) searchClearBtn.classList.add('active'); // 點標籤搜尋時，自動讓叉叉彈出來
-        }
-        
-        // 4. 強制觸發一次畫廊重新渲染，讓畫面即時篩選出該標籤的內容！
+        if (searchInput) searchInput.value = tagText;
+        const clearBtn = document.getElementById('searchClearBtn');
+        if (clearBtn) clearBtn.classList.add('active'); // 讓叉叉自動亮起
         renderGallery();
-        
-        // 5. 貼心小彩蛋：畫面自動滑動回頂部，讓使用者看清楚搜尋結果
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
 
-    gallery.appendChild(card);
+    // 👑 絕不能漏掉的靈魂核心：把做好的卡片貼到畫面上！
+    gallery.appendChild(card); 
   });
 }
 
