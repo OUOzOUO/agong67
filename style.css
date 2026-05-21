@@ -1,4 +1,4 @@
-/* style.css - Neo-Retro 完整數位特仕版 (SPA 分頁優化) */
+/* style.css - 阿公67網 完整數位特仕版 (含大總管後台、滿版媒體、大氣搜尋列) */
 
 /* --- 全域變數與重設 --- */
 :root {
@@ -83,39 +83,6 @@ header {
   margin: 0 0 30px 0;
 }
 
-/* 搜尋框美化 */
-.search-wrapper {
-  position: relative;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.search-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #bdc3c7;
-}
-
-#searchInput {
-  padding: 15px 15px 15px 45px;
-  width: 100%;
-  font-size: 16px;
-  font-family: var(--font-body);
-  border: 2px solid #e0e0e0;
-  border-radius: 30px; /* 圓角 */
-  outline: none;
-  transition: var(--transition-base);
-  background: var(--bg-color);
-}
-
-#searchInput:focus {
-  border-color: var(--main-color);
-  box-shadow: 0 0 10px rgba(26, 94, 99, 0.2);
-  background: white;
-}
-
 /* --- 左上角漢堡選單按鈕 --- */
 .menu-toggle {
   position: absolute;
@@ -134,7 +101,7 @@ header {
   border-radius: 50%;
   box-shadow: 0 4px 12px var(--shadow-color);
   transition: var(--transition-base);
-  z-index: 90; /* 確保在主畫面層級之上 */
+  z-index: 90;
 }
 
 .menu-toggle:hover {
@@ -271,8 +238,6 @@ header {
   width: 100%;
   height: 100%;
   background: rgba(26, 37, 48, 0.3);
-  /*backdrop-filter: blur(4px);*/ /* 毛玻璃霧化效果 */
-  /*-webkit-backdrop-filter: blur(4px);*/
   z-index: 95;
   opacity: 0;
   pointer-events: none;
@@ -320,7 +285,7 @@ header {
   border-radius: 20px;
   box-shadow: 0 15px 35px var(--shadow-color);
   width: 100%;
-  max-width: 600px; /* 聚合中央排版 */
+  max-width: 600px;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -494,19 +459,6 @@ main {
   transform: translateY(-5px) scale(1.0);
 }
 
-/* 迷因圖片樣式 */
-.card img {
-  width: 100%;
-  height: 220px; /* 統一比例高度，防排版崩塌 */
-  object-fit: cover;
-  border-bottom: 2px solid var(--bg-color);
-  transition: var(--transition-base);
-}
-
-.card:hover img {
-  transform: scale(1.05); /* 圖片內部輕微拉近放大 */
-}
-
 /* 台詞與描述字體排版 */
 .card p {
   margin: 15px;
@@ -561,25 +513,10 @@ footer {
     gap: 20px;
   }
 }
+
 /* ==========================================================================
-   全端升級專屬：影片、徽章與下載按鈕樣式
+   全端升級專屬：徽章與下載按鈕樣式
    ========================================================================== */
-
-/* 統一卡片內媒體(圖片/影片)的尺寸限制 */
-.card-media {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  border-bottom: 2px solid var(--bg-color);
-  transition: var(--transition-base);
-  display: block; /* 移除 video 底部的空白間隙 */
-  background: #000; /* 影片載入前的深色背景 */
-}
-
-/* 針對非圖片元素的特製處理 (影片無法用 CSS object-fit 完美裁切時的備案) */
-video.card-media {
-  object-fit: contain; /* 確保影片不被截斷 */
-}
 
 /* 點擊下載按鈕 (動圖與影片專屬) */
 .download-btn {
@@ -619,11 +556,6 @@ video.card-media {
 .badge-gif   { background-color: #9b59b6; }
 .badge-video { background-color: #e74c3c; }
 
-/* 防止靜態圖卡片被點擊縮放動畫干擾 */
-.card.interactive-card:hover img.card-media {
-  transform: scale(1.05);
-}
-
 /* ==========================================================================
    VIP 會員登入 / 註冊彈出視窗 (Modal)
    ========================================================================== */
@@ -643,7 +575,6 @@ video.card-media {
   opacity: 0;
   pointer-events: none;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  /* ✨ 新增：開啟 GPU 硬體加速，讓彈出動畫絲滑無比 */
   will-change: transform, opacity;
 }
 
@@ -726,20 +657,11 @@ video.card-media {
   left: 0;
   width: 100%;
   height: 100%;
-  
-  /* ✨ 修改：加深背景透明度，彌補拿掉毛玻璃的視覺深度 */
   background: rgba(0, 0, 0, 0.65); 
-  
-  /* ✨ 修改：註解掉或刪除極度吃效能的毛玻璃，徹底解決閃爍 */
-  /* backdrop-filter: blur(5px); */
-  /* -webkit-backdrop-filter: blur(5px); */
-  
   z-index: 195;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
-  
-  /* ✨ 新增：開啟 GPU 硬體加速 */
   will-change: opacity;
 }
 
@@ -813,121 +735,6 @@ video.card-media {
 .action-btn.downgrade { background: #e74c3c; color: white; }
 .action-btn.downgrade:hover { background: #c0392b; }
 
-/* ==========================================================================
-   新增功能優化：密碼眼睛切換與卡片標籤
-   ========================================================================== */
-   
-/* 密碼輸入框外層包裝與眼睛圖示定位 */
-.password-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.password-wrapper input {
-  width: 100%;
-  padding-right: 40px; /* 預留空間給右邊的眼睛 */
-}
-
-#togglePasswordBtn {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: #95a5a6;
-  font-size: 1.1rem;
-  transition: color 0.2s;
-  padding: 5px; /* 增加點擊範圍 */
-}
-
-#togglePasswordBtn:hover {
-  color: var(--main-color);
-}
-
-/* 卡片名稱微調 (縮減原本 p 標籤的下方 margin) */
-.card .card-title {
-  margin: 15px 15px 5px 15px; 
-  font-size: 15px;
-  color: var(--text-color);
-  font-weight: bold;
-}
-
-/* 卡片底下的標籤容器 */
-.card-tags {
-  margin: 0 15px 15px 15px;
-  display: flex;
-  flex-wrap: wrap; /* 標籤太多會自動換行 */
-  gap: 6px;
-}
-
-/* 單個小圓角標籤設計 */
-.tag-badge {
-  background: rgba(243, 156, 18, 0.15); /* 淡琥珀橘背景 */
-  color: #d68910; /* 深橘色文字 */
-  font-size: 0.75rem;
-  font-weight: bold;
-  padding: 3px 8px;
-  border-radius: 12px;
-  letter-spacing: 0.5px;
-  transition: all 0.2s ease;
-}
-
-.tag-badge:hover {
-  background: var(--accent-color);
-  color: white;
-}
-
-/* 修改密碼小按鈕 */
-.change-pwd-btn {
-  background: transparent;
-  border: 1px solid var(--main-color);
-  color: var(--main-color);
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  cursor: pointer;
-  margin-left: auto; /* 靠右對齊 */
-  transition: all 0.2s;
-}
-
-.change-pwd-btn:hover {
-  background: var(--main-color);
-  color: white;
-}
-
-/* ==========================================================================
-   新增功能優化：搜尋欄一鍵清除叉叉按鈕
-   ========================================================================== */
-
-/* 調整搜尋框的右側內襯，留空間給叉叉，防止文字蓋到按鈕 */
-#searchInput {
-  padding-right: 45px; 
-}
-
-/* 叉叉圖示定位與美化 */
-.search-clear-icon {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%) scale(0); /* 預設完全隱藏 (縮小到看不見) */
-  color: #bdc3c7;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s;
-  padding: 5px; /* 擴大手機版的點擊判定範圍 */
-  z-index: 5;
-}
-
-/* 當有文字時，JS 會幫它加上 .active，這時就會華麗彈出 */
-.search-clear-icon.active {
-  transform: translateY(-50%) scale(1);
-}
-
-.search-clear-icon:hover {
-  color: #e74c3c; /* 懸停時變成警告紅 */
-}
-
 /* 後台二級小分類按鈕 */
 .admin-sub-btn {
   background: #f0f0f0;
@@ -957,33 +764,120 @@ video.card-media {
   cursor: pointer;
 }
 .admin-meme-row-card:hover {
-  border-color: #9b59b6 !important; /* 懸停時變紫色 */
+  border-color: #9b59b6 !important;
+}
+
+/* ==========================================================================
+   卡片標籤與密碼眼睛小細節
+   ========================================================================== */
+   
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 40px; 
+}
+
+#togglePasswordBtn, #toggleOldPasswordBtn, #toggleNewPasswordBtn, #toggleConfirmPasswordBtn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #95a5a6;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+  padding: 5px; 
+}
+
+#togglePasswordBtn:hover, #toggleOldPasswordBtn:hover, #toggleNewPasswordBtn:hover, #toggleConfirmPasswordBtn:hover {
+  color: var(--main-color);
+}
+
+/* 卡片名稱微調 (縮減原本 p 標籤的下方 margin) */
+.card .card-title {
+  margin: 15px 15px 5px 15px; 
+  font-size: 15px;
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+.card-tags {
+  margin: 0 15px 15px 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-badge {
+  background: rgba(243, 156, 18, 0.15);
+  color: #d68910; 
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tag-badge:hover {
+  background: var(--accent-color);
+  color: white;
+}
+
+/* 修改密碼小按鈕 */
+.change-pwd-btn {
+  background: transparent;
+  border: 1px solid var(--main-color);
+  color: var(--main-color);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: auto; 
+  transition: all 0.2s;
+}
+
+.change-pwd-btn:hover {
+  background: var(--main-color);
+  color: white;
 }
 
 /* ==========================================================================
    ✨ 搜尋欄整體大氣視覺升級 (首頁與後台大總管雙系統同步放大修正版)
    ========================================================================== */
 
-/* 1. 搜尋包裹器的陰影與高度升級 */
+.search-container {
+  margin: 30px auto;
+  max-width: 700px;
+  width: 100%;
+  padding: 0 15px;
+}
+
 .search-wrapper {
   position: relative;
   width: 100%;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05) !important; /* 絲滑柔和陰影 */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05) !important;
   border-radius: 30px !important;
   transition: transform 0.2s;
+  margin: 0 auto;
 }
 
 .search-wrapper:hover {
-  transform: translateY(-2px); /* 懸停時微浮起 */
+  transform: translateY(-2px);
 }
 
-/* 2. 重頭戲：把「首頁搜尋框」與「後台審核搜尋框」本體徹底撐大 */
 #searchInput, 
 #adminMemeSearchInput {
   width: 100% !important;
-  height: 55px !important;        /* 🔥 完美撐高到 55px */
-  padding: 0 55px 0 55px !important; /* 調整內襯：左邊給放大鏡，右邊給大叉叉 */
-  font-size: 1.15rem !important;   /* 🔥 打字字體同步放大 */
+  height: 55px !important;
+  padding: 0 55px 0 55px !important;
+  font-size: 1.15rem !important;
   border: 2px solid #e0dbd3 !important;
   border-radius: 30px !important;
   background-color: #ffffff !important;
@@ -992,7 +886,6 @@ video.card-media {
   box-sizing: border-box !important;
 }
 
-/* 輸入框聚焦時的醒目外框 (雙搜尋框同步) */
 #searchInput:focus,
 #adminMemeSearchInput:focus {
   outline: none !important;
@@ -1000,34 +893,31 @@ video.card-media {
   box-shadow: 0 0 0 4px rgba(26, 94, 99, 0.15) !important; 
 }
 
-/* 3. 左側搜尋放大鏡圖示同步放大 (支援後台與首頁) */
 .search-wrapper .search-icon {
   position: absolute !important;
   left: 20px !important;          
   top: 50% !important;
   transform: translateY(-50%) !important;
   color: #95a5a6 !important;
-  font-size: 1.25rem !important;   /* 放大鏡尺寸加倍 */
+  font-size: 1.25rem !important;
   pointer-events: none !important;
   transition: color 0.2s !important;
   margin: 0 !important;
   z-index: 4 !important;
 }
 
-/* 當輸入框聚焦時，放大鏡變色 */
 .search-wrapper:focus-within .search-icon {
   color: var(--main-color) !important;
 }
 
-/* 4. 右側清除叉叉按鈕同步放大與微調位置 (支援後台首頁雙系統) */
 .search-clear-icon,
 #adminMemeSearchClearBtn {
   position: absolute !important;
   right: 20px !important;         
   top: 50% !important;
-  transform: translateY(-50%) scale(0) !important; /* 預設完全縮小隱藏 */
+  transform: translateY(-50%) scale(0) !important; 
   color: #bdc3c7 !important;
-  font-size: 1.35rem !important;   /* 叉叉按鈕加大，更好點擊 */
+  font-size: 1.35rem !important;
   cursor: pointer !important;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s !important;
   padding: 5px !important; 
@@ -1035,7 +925,6 @@ video.card-media {
   margin: 0 !important;
 }
 
-/* 當有文字激活時，叉叉華麗彈出 */
 .search-clear-icon.active,
 #adminMemeSearchClearBtn.active {
   transform: translateY(-50%) scale(1) !important;
@@ -1043,36 +932,49 @@ video.card-media {
 
 .search-clear-icon:hover,
 #adminMemeSearchClearBtn:hover {
-  color: #e74c3c !important; /* 懸停警告紅 */
+  color: #e74c3c !important; 
 }
 
 /* ==========================================================================
-   ✨ 終極優化：Google Drive 影片與 GIF 手機滿版相容外殼
+   ✨ 終極優化：靜態圖片滿版 / 影片增高防擠壓 / GIF 完美解凍滿版
    ========================================================================== */
 
-/* 建立一個 16:9 或 1:1 的黃金比例容器，防止手機版原生黑條把畫面擠扁 */
-.media-wrapper {
-  position: relative;
+/* 🖼️ 一般圖片樣式 */
+.card-media {
   width: 100%;
-  height: 220px; /* 保持跟原本卡片高度一致 */
-  background: #000;
-  overflow: hidden;
+  height: 220px;
+  object-fit: cover;
+  border-bottom: 2px solid var(--bg-color);
+  transition: var(--transition-base);
+  display: block; 
 }
 
-/* 讓影片外殼強制延伸並覆蓋黑邊 */
+/* 🎬 影片專屬容器：加高到 280px，給手機的播放控制條足夠的空間，不遮擋影片畫面！ */
+.media-wrapper.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px; 
+  background: #000;
+  overflow: hidden;
+  border-bottom: 2px solid var(--bg-color);
+}
+
 .card-media.video-iframe {
   width: 100% !important;
   height: 100% !important;
-  transform: scale(1.02); /* ✨ 微調放大 2%，自動把 Google 播放器邊邊角角的雜訊或黑線擠出框外！ */
-  will-change: transform;
+  display: block;
 }
 
-/* 讓 GIF 外殼自動無視點擊事件，純粹重播 */
-.card-media.gif-iframe {
-  width: 100% !important;
-  height: 125% !important; /* ✨ 稍微拉高高度，因為 Google GIF 預覽版上下自帶白邊，拉高能把白邊完美藏在卡片框框外面！ */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+/* ⚡ GIF 專屬樣式：回歸一般圖片的完美比例裁切，100% 滿版無黑邊 */
+.card-media.gif-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-bottom: 2px solid var(--bg-color);
+  display: block;
+}
+
+/* 防止靜態圖卡片被點擊縮放動畫干擾 */
+.card.interactive-card:hover img.card-media {
+  transform: scale(1.05);
 }

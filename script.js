@@ -283,22 +283,31 @@ function renderGallery() {
       });
       
     } else if (currentViewType === 'video' || currentViewType === 'gif') {
-      // 🛡️ 防禦：防止 url 是空值導致 match 當機
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
       const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
 
-      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
       let mediaHTML = '';
 
       if (currentViewType === 'video') {
-        mediaHTML = `<iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>`;
+        // 🎬 影片：維持 iframe，這是 Google Drive 唯一穩定的影片串流方式
+        const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
+        mediaHTML = `
+          <div class="media-wrapper video-wrapper">
+            <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
+          </div>
+        `;
       } else if (currentViewType === 'gif') {
-        mediaHTML = `<iframe class="card-media gif-iframe" src="${iframeUrl}" style="border:none; background:#000; pointer-events: none;"></iframe>`;
+        // ⚡ GIF 終極解法：使用 img 標籤 + Google 圖片專屬直連 (uc?id=)
+        // 這樣瀏覽器會把它當成一張純圖片，100% 自動重播，沒有任何黑框與播放按鈕！
+        const directImageUrl = fileId ? `https://drive.google.com/uc?id=${fileId}` : safeUrl;
+        mediaHTML = `
+          <img class="card-media gif-image" src="${directImageUrl}" alt="${safeQuoteHTML}">
+        `;
       }
 
       card.innerHTML = `
-        <div class="media-wrapper">${mediaHTML}</div>
+        ${mediaHTML}
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
         <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
