@@ -263,11 +263,32 @@ function renderGallery() {
     } else if (currentViewType === 'video' || currentViewType === 'gif') {
       const fileIdMatch = meme.url.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
-      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
       const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
+      
+      let mediaHTML = '';
+
+      if (currentViewType === 'video' && fileId) {
+        // ✨ 關鍵核心：將 preview 改成 direct download 節點 (uc?export=download)，變成直接的動態影片檔來源
+        const directVideoUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+        
+        // 用 HTML5 原生 video 標籤取代吃屎的 iframe！
+        // playsinline: 防止 iPhone 播放時自動強制全螢幕
+        // controls: 顯示手機版播放、暫停、時間條按鈕
+        // preload="metadata": 只抓取影片基本資訊（長度、第一幀圖），幫手機省流量兼防黑屏
+        mediaHTML = `
+          <video class="card-media" controls playsinline preload="metadata" style="background:#000;">
+            <source src="${directVideoUrl}" type="video/mp4">
+            您的瀏覽器不支援影片播放 QQ
+          </video>
+        `;
+      } else {
+        // GIF 動圖或是非 Drive 的外部影片來源，維持原本的 iframe 兼容處理
+        const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
+        mediaHTML = `<iframe class="card-media" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none;"></iframe>`;
+      }
 
       card.innerHTML = `
-        <iframe class="card-media" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none;"></iframe>
+        ${mediaHTML}
         <p class="card-title">${meme.quote}</p>
         ${tagsHTML}
         <a href="${meme.url}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
