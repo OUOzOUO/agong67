@@ -48,7 +48,7 @@ function isValidPassword(pwd) {
 function updateAuthUI() {
   if (isGuest()) {
     // 沒登入的匿名訪客
-    if (userStatusArea) userStatusArea.innerHTML = `<i class="fas fa-user-secret"></i> 當前身份：<strong>一般邊緣路人</strong>`;
+    if (userStatusArea) userStatusArea.innerHTML = `<i class="fas fa-user-secret"></i> 當前身份：<strong>一般路人</strong>`;
     if (loginNavBtn) loginNavBtn.style.display = 'flex';
     if (logoutNavBtn) logoutNavBtn.style.display = 'none';
     if (adminNavBtn) adminNavBtn.style.display = 'none';
@@ -56,11 +56,11 @@ function updateAuthUI() {
     if (uploadNavBtn) {
       uploadNavBtn.style.opacity = '0.5';
       uploadNavBtn.style.cursor = 'not-allowed';
-      uploadNavBtn.title = '請先登入並升級為會員才能貢獻藏品喔！';
+      uploadNavBtn.title = '請先登入並獲得權限才能上傳藏品喔！';
     }
   } else {
     // 判斷身份：如果是 admin 就是大總管，如果是 member 就是 VIP，其餘有登入但沒權限的稱為「有登入的人」
-    let roleText = '有登入的人';
+    let roleText = '🤓 有登入的人';
     if (currentUser.role === 'admin') {
       roleText = '👑 超級大總管';
     } else if (currentUser.role === 'member') {
@@ -188,7 +188,7 @@ if (authForm) {
     .then(result => {
       if (result.status === 'success') {
         if (isRegisterMode) {
-          alert('註冊成功！您目前的身份為「有登入的人」，請聯絡管理員幫您的帳號升級成 VIP 喔！');
+          alert('註冊成功！您目前的身份為「有登入的人」，如欲上傳檔案，請聯絡管理員幫您的帳號升級成 VIP ！');
           switchMode(false); 
         } else {
           alert(`歡迎回來，${username}！`);

@@ -149,7 +149,7 @@ if (uploadButton) {
       .then(response => response.json())
       .then(result => {
         if (result.status === 'success') {
-          alert('藏品上傳成功！你真酷！');
+          alert('藏品上傳成功！');
           imageInput.value = '';
           quoteInput.value = '';
           tagsInput.value = '';
