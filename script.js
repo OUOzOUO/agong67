@@ -27,7 +27,6 @@ const closeDrawerBtn = document.getElementById('closeDrawer');
 const navBtns = document.querySelectorAll('.nav-btn');
 const viewSections = document.querySelectorAll('.view-section');
 
-// 升級為全域函數，讓 auth.js 可以呼叫
 window.openDrawer = function() {
   if(navDrawer) navDrawer.classList.add('active');
   if(drawerOverlay) drawerOverlay.classList.add('active');
@@ -38,42 +37,35 @@ window.closeDrawerFunc = function() {
   if(drawerOverlay) drawerOverlay.classList.remove('active');
 }
 
-menuToggle.addEventListener('click', window.openDrawer);
-if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', window.closeDrawerFunc);
-if (drawerOverlay) drawerOverlay.addEventListener('click', window.closeDrawerFunc);
+if(menuToggle) menuToggle.addEventListener('click', window.openDrawer);
+if(closeDrawerBtn) closeDrawerBtn.addEventListener('click', window.closeDrawerFunc);
+if(drawerOverlay) drawerOverlay.addEventListener('click', window.closeDrawerFunc);
 
-// 導覽列點擊邏輯 (包含分類切換與防護盾)
 navBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const targetId = btn.getAttribute('data-target');
     const targetType = btn.getAttribute('data-type'); 
 
-    // ✨ 終極防護盾：如果這個按鈕沒有設定 data-target (例如登入按鈕)，直接跳出，交給 auth.js 處理
     if (!targetId) return;
 
-    // 隱藏所有視圖
     viewSections.forEach(sec => sec.classList.remove('active-view'));
     
-    // 顯示目標視圖
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
       targetElement.classList.add('active-view');
     }
 
-    // 選單高亮切換
     navBtns.forEach(b => {
       if(b.getAttribute('data-target')) b.classList.remove('active');
     });
     btn.classList.add('active');
 
-    // 如果點擊的是畫廊展區，切換館別並重新渲染
     if (targetId === 'galleryView' && targetType) {
       currentViewType = targetType;
       if (galleryTitle) galleryTitle.innerHTML = btn.innerHTML; 
       if (searchInput) searchInput.value = ''; 
       renderGallery(); 
     }
-
     window.closeDrawerFunc(); 
   });
 });
@@ -81,43 +73,44 @@ navBtns.forEach(btn => {
 // ==========================================================================
 // 上傳邏輯：自動辨識檔案副檔名與大小控制
 // ==========================================================================
-imageInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) {
-    fileNameDisplay.innerText = '尚未選擇檔案';
-    fileTypeBadge.style.display = 'none';
-    currentUploadFileType = 'image';
-    return;
-  }
+if(imageInput) {
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      fileNameDisplay.innerText = '尚未選擇檔案';
+      fileTypeBadge.style.display = 'none';
+      currentUploadFileType = 'image';
+      return;
+    }
 
-  const maxSizeMB = 10;
-  if (file.size > maxSizeMB * 1024 * 1024) {
-    alert(`檔案太大了！為了保護伺服器，請上傳小於 ${maxSizeMB}MB 的檔案！`);
-    imageInput.value = ''; 
-    return;
-  }
+    const maxSizeMB = 10;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      alert(`檔案太大了！為了保護伺服器，請上傳小於 ${maxSizeMB}MB 的檔案！`);
+      imageInput.value = ''; 
+      return;
+    }
 
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'gif') {
-    currentUploadFileType = 'gif';
-    fileTypeBadge.innerText = '⚡ 動態 GIF';
-    fileTypeBadge.className = 'file-type-badge badge-gif';
-  } else if (ext === 'mp4' || ext === 'webm' || ext === 'mov') {
-    currentUploadFileType = 'video';
-    fileTypeBadge.innerText = '🎬 短影片';
-    fileTypeBadge.className = 'file-type-badge badge-video';
-  } else {
-    currentUploadFileType = 'image'; 
-    fileTypeBadge.innerText = '🖼️ 靜態圖片';
-    fileTypeBadge.className = 'file-type-badge badge-image';
-  }
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'gif') {
+      currentUploadFileType = 'gif';
+      fileTypeBadge.innerText = '⚡ 動態 GIF';
+      fileTypeBadge.className = 'file-type-badge badge-gif';
+    } else if (ext === 'mp4' || ext === 'webm' || ext === 'mov') {
+      currentUploadFileType = 'video';
+      fileTypeBadge.innerText = '🎬 短影片';
+      fileTypeBadge.className = 'file-type-badge badge-video';
+    } else {
+      currentUploadFileType = 'image'; 
+      fileTypeBadge.innerText = '🖼️ 靜態圖片';
+      fileTypeBadge.className = 'file-type-badge badge-image';
+    }
 
-  fileNameDisplay.innerText = `📄 已選擇: ${file.name}`;
-  fileNameDisplay.style.color = "#1a5e63"; 
-  fileTypeBadge.style.display = 'inline-block';
-});
+    fileNameDisplay.innerText = `📄 已選擇: ${file.name}`;
+    fileNameDisplay.style.color = "#1a5e63"; 
+    fileTypeBadge.style.display = 'inline-block';
+  });
+}
 
-// 處理上傳送出
 if (uploadButton) {
   uploadButton.addEventListener('click', () => {
     const file = imageInput.files[0];
@@ -144,7 +137,7 @@ if (uploadButton) {
         quote: quote,
         tags: cleanedTags,
         fileType: currentUploadFileType,
-        uploader: currentUser.username // ✨ 新增：將目前的登入帳號傳給後端記錄！
+        uploader: currentUser.username 
       };
 
       fetch(GAS_API_URL, {
@@ -183,26 +176,35 @@ if (uploadButton) {
 }
 
 // ==========================================================================
-// 讀取與渲染邏輯 (分流渲染機制)
+// 讀取與渲染邏輯 (🛡️ 鈦合金防護版：防崩潰、精準報錯)
 // ==========================================================================
 window.loadGallery = function() {
   if (gallery) gallery.innerHTML = '<p>努力加載藏品中，請稍候...</p>';
   
   fetch(GAS_API_URL)
-    .then(response => response.json())
-    .then(data => {
-      allMemes = data;
-      renderGallery(); 
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP 錯誤狀態碼: ${response.status}`);
+      return response.text(); // 🛡️ 先拿純文字，防止 GAS 回傳錯誤 HTML 導致 json 解析當機
+    })
+    .then(text => {
+      try {
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) {
+          throw new Error(data.message || "資料庫回傳的不是正常的陣列格式！");
+        }
+        allMemes = data;
+        renderGallery(); 
+      } catch (e) {
+        console.error('解析或渲染崩潰:', e);
+        if (gallery) gallery.innerHTML = `<div style="text-align:center; color:#e74c3c; width:100%;"><p><b>⚠️ 網頁內部解析發生崩潰！</b></p><p style="font-size:0.9rem;">錯誤代碼：${e.message}</p></div>`;
+      }
     })
     .catch(err => {
-      console.error('載入失敗:', err);
-      if (gallery) gallery.innerHTML = '<p>載入失敗，阿公的伺服器可能在睡覺 QQ</p>';
+      console.error('連線失敗:', err);
+      if (gallery) gallery.innerHTML = `<div style="text-align:center; color:#e74c3c; width:100%;"><p><b>⚠️ 無法連線到阿公的雲端伺服器</b></p><p style="font-size:0.9rem;">原因：${err.message}</p></div>`;
     });
 }
 
-// ==========================================================================
-// 渲染畫廊 (全端完整修復版：修復卡片消失、影片黑邊、GIF凍結問題)
-// ==========================================================================
 function renderGallery() {
   const gallery = document.getElementById('gallery');
   const galleryTitle = document.getElementById('galleryTitle');
@@ -210,7 +212,6 @@ function renderGallery() {
 
   gallery.innerHTML = '';
 
-  // 1. 動態更新展區標題
   if (galleryTitle) {
     if (currentViewType === 'image') galleryTitle.innerHTML = '<i class="fas fa-image"></i> 🖼️ 靜態圖片區';
     else if (currentViewType === 'gif') galleryTitle.innerHTML = '<i class="fas fa-bolt"></i> ⚡ 動態 GIF 區';
@@ -219,14 +220,19 @@ function renderGallery() {
 
   const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-  // 2. 篩選目前要顯示的藏品
   const filteredMemes = allMemes.filter(meme => {
     const itemType = meme.type || 'image';
     if (itemType !== currentViewType) return false;
-
     if (!keyword) return true;
-    const matchQuote = meme.quote && meme.quote.toLowerCase().includes(keyword);
-    const matchTags = meme.tags ? meme.tags.some(tag => tag.toLowerCase().includes(keyword)) : false;
+    
+    // 🛡️ 防禦：強制把標題(quote)轉成字串，防止純數字標題引發 toLowerCase 當機！
+    const safeQuote = String(meme.quote || '').toLowerCase();
+    const matchQuote = safeQuote.includes(keyword);
+    
+    // 🛡️ 防禦：確保 tags 存在且為陣列，並將標籤強制轉字串比對
+    const matchTags = Array.isArray(meme.tags) ? 
+      meme.tags.some(tag => String(tag).toLowerCase().includes(keyword)) : false;
+      
     return matchQuote || matchTags;
   });
 
@@ -235,39 +241,40 @@ function renderGallery() {
     return;
   }
 
-  // 3. 逐一產生卡片並貼上畫面
   filteredMemes.forEach(meme => {
     const card = document.createElement('div');
     card.className = 'card';
 
-    // 產生標籤 HTML
     let tagsHTML = '';
-    if (meme.tags && meme.tags.length > 0 && meme.tags[0] !== "") {
-      const tagsList = meme.tags.map(t => `<span class="tag-badge">#${t.trim()}</span>`).join('');
+    if (Array.isArray(meme.tags) && meme.tags.length > 0 && meme.tags[0] !== "") {
+      const tagsList = meme.tags.map(t => `<span class="tag-badge">#${String(t).trim()}</span>`).join('');
       tagsHTML = `<div class="card-tags">${tagsList}</div>`;
     }
 
-    // A. 處理靜態圖片
+    // 🛡️ 防禦：強制安全輸出字串
+    const safeQuoteHTML = String(meme.quote || '未命名藏品');
+    const safeUrl = String(meme.url || '');
+
     if (currentViewType === 'image') {
       card.classList.add('interactive-card');
       card.innerHTML = `
-        <img class="card-media" src="${meme.url}" alt="${meme.quote}">
-        <p class="card-title">${meme.quote}</p>
+        <img class="card-media" src="${safeUrl}" alt="${safeQuoteHTML}">
+        <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
       `;
 
       card.addEventListener('click', async () => {
         try {
           card.style.opacity = '0.5';
-          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(meme.url);
+          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
           const response = await fetch(proxyUrl);
           if (!response.ok) throw new Error('阻擋下載');
           let blob = await response.blob();
           if (blob.type !== 'image/png') blob = new Blob([blob], {type: 'image/png'});
           await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-          alert(`已成功複製照片：${meme.quote}！\n可以直接貼上了！`);
+          alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
         } catch (err) {
-          navigator.clipboard.writeText(meme.url)
+          navigator.clipboard.writeText(safeUrl)
             .then(() => alert(`圖片本體下載失敗，但已複製「圖片網址」！`))
             .catch(e => console.error(e));
         } finally {
@@ -275,13 +282,13 @@ function renderGallery() {
         }
       });
       
-    // B. 處理 GIF 動圖與短影片 (套用防黑邊智慧外殼)
     } else if (currentViewType === 'video' || currentViewType === 'gif') {
-      const fileIdMatch = meme.url.match(/id=([^&]+)/);
+      // 🛡️ 防禦：防止 url 是空值導致 match 當機
+      const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
       const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
 
-      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
+      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
       let mediaHTML = '';
 
       if (currentViewType === 'video') {
@@ -292,13 +299,12 @@ function renderGallery() {
 
       card.innerHTML = `
         <div class="media-wrapper">${mediaHTML}</div>
-        <p class="card-title">${meme.quote}</p>
+        <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
-        <a href="${meme.url}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
+        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
       `;
     }
 
-    // 4. 綁定標籤點擊搜尋事件
     const tagBadges = card.querySelectorAll('.tag-badge');
     tagBadges.forEach(badge => {
       badge.addEventListener('click', (event) => {
@@ -306,55 +312,45 @@ function renderGallery() {
         const tagText = badge.innerText.replace('#', '').trim();
         if (searchInput) searchInput.value = tagText;
         const clearBtn = document.getElementById('searchClearBtn');
-        if (clearBtn) clearBtn.classList.add('active'); // 讓叉叉自動亮起
+        if (clearBtn) clearBtn.classList.add('active'); 
         renderGallery();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
 
-    // 👑 絕不能漏掉的靈魂核心：把做好的卡片貼到畫面上！
     gallery.appendChild(card); 
   });
 }
 
 // ==========================================================================
-// ✨ 新增：搜尋欄叉叉按鈕聯動邏輯
+// 搜尋欄聯動與全域功能
 // ==========================================================================
 if (searchInput && searchClearBtn) {
-  // A. 監聽使用者輸入：只要有打字就顯示叉叉，沒打字就隱藏
   searchInput.addEventListener('input', () => {
     if (searchInput.value.trim().length > 0) {
-      searchClearBtn.classList.add('active'); // 彈出叉叉
+      searchClearBtn.classList.add('active'); 
     } else {
-      searchClearBtn.classList.remove('active'); // 隱藏叉叉
+      searchClearBtn.classList.remove('active'); 
     }
-    renderGallery(); // 觸發原本的即時搜尋渲染
+    renderGallery(); 
   });
 
-  // B. 監聽叉叉點擊：點擊後清空、隱藏叉叉、重新渲染完整畫廊
   searchClearBtn.addEventListener('click', () => {
-    searchInput.value = ''; // 1. 清空文字
-    searchClearBtn.classList.remove('active'); // 2. 隱藏自己
-    searchInput.focus(); // 3. 貼心體驗：讓游標自動重新聚焦在搜尋框內
-    renderGallery(); // 4. 恢復顯示當前展區的所有迷因
+    searchInput.value = ''; 
+    searchClearBtn.classList.remove('active'); 
+    searchInput.focus(); 
+    renderGallery(); 
   });
 }
 
-// 網頁開啟時自動載入
-window.loadGallery();
-
-// ==========================================================================
-// ✨ 新增：手機版短影片點擊播放/暫停與智慧控制條切換
-// ==========================================================================
 window.toggleMobileVideo = function(videoEl) {
   if (videoEl.paused) {
-    // 1. 播放影片
     videoEl.play();
-    // 2. 當使用者真的點擊播放後，才把控制條叫出來，方便他調整進度和全螢幕
     videoEl.setAttribute('controls', 'true');
   } else {
-    // 3. 再次點擊則暫停
     videoEl.pause();
-    // 4. 暫停時可以選擇保留或移除控制條，這裡保持顯示方便操作
   }
 }
+
+// 啟動引擎
+window.loadGallery();
