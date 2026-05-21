@@ -1045,3 +1045,34 @@ video.card-media {
 #adminMemeSearchClearBtn:hover {
   color: #e74c3c !important; /* 懸停警告紅 */
 }
+
+/* ==========================================================================
+   ✨ 終極優化：Google Drive 影片與 GIF 手機滿版相容外殼
+   ========================================================================== */
+
+/* 建立一個 16:9 或 1:1 的黃金比例容器，防止手機版原生黑條把畫面擠扁 */
+.media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 220px; /* 保持跟原本卡片高度一致 */
+  background: #000;
+  overflow: hidden;
+}
+
+/* 讓影片外殼強制延伸並覆蓋黑邊 */
+.card-media.video-iframe {
+  width: 100% !important;
+  height: 100% !important;
+  transform: scale(1.02); /* ✨ 微調放大 2%，自動把 Google 播放器邊邊角角的雜訊或黑線擠出框外！ */
+  will-change: transform;
+}
+
+/* 讓 GIF 外殼自動無視點擊事件，純粹重播 */
+.card-media.gif-iframe {
+  width: 100% !important;
+  height: 125% !important; /* ✨ 稍微拉高高度，因為 Google GIF 預覽版上下自帶白邊，拉高能把白邊完美藏在卡片框框外面！ */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

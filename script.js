@@ -267,30 +267,30 @@ function renderGallery() {
       
       let mediaHTML = '';
 
-      if (currentViewType === 'video' && fileId) {
-        // 🎬 影片直連處理：原生 video 標籤，點擊才播放以防止黑條遮擋
-        const directVideoUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+      } else if (currentViewType === 'video' || currentViewType === 'gif') {
+      const fileIdMatch = meme.url.match(/id=([^&]+)/);
+      const fileId = fileIdMatch ? fileIdMatch[1] : '';
+      const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
+      
+      // ✨ 核心修正：放棄會踩到流量牆的下載網址，全面回歸 Google Sheets 認可最穩定的 preview 節點
+      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
+      
+      let mediaHTML = '';
+
+      if (currentViewType === 'video') {
+        // 🎬 影片專用外殼：加上 allow="autoplay" 確保相容性
         mediaHTML = `
-          <video class="card-media" playsinline loop preload="metadata" style="background:#000; cursor:pointer;" onclick="toggleMobileVideo(this)">
-            <source src="${directVideoUrl}" type="video/mp4">
-            您的瀏覽器不支援影片播放 QQ
-          </video>
+          <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
         `;
-      } else if (currentViewType === 'gif' && fileId) {
-        // ⚡ GIF 直連處理：將其導向 Google Drive 原始圖檔直連網址 (uc?export=download)
-        // 並用網頁標準 <img> 標籤渲染，這在手機上 100% 會自動無限輪播，不再凍結！
-        const directGifUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+      } else if (currentViewType === 'gif') {
+        // ⚡ GIF 專用外殼：利用 Google 原生內嵌網頁，這才是最安全的做法
         mediaHTML = `
-          <img class="card-media" src="${directGifUrl}" alt="${meme.quote}" style="object-fit: cover;">
+          <iframe class="card-media gif-iframe" src="${iframeUrl}" style="border:none; background:#000; pointer-events: none;"></iframe>
         `;
-      } else {
-        // 防呆備案：若不是 Google Drive 網址，則走原本的預覽外殼
-        const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
-        mediaHTML = `<iframe class="card-media" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none;"></iframe>`;
       }
 
       card.innerHTML = `
-        ${mediaHTML}
+        <div class="media-wrapper">${mediaHTML}</div>
         <p class="card-title">${meme.quote}</p>
         ${tagsHTML}
         <a href="${meme.url}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
