@@ -176,7 +176,7 @@ if (uploadButton) {
 }
 
 // ==========================================================================
-// 讀取與渲染邏輯 (🛡️ 鈦合金防護版：防崩潰、精準報錯)
+// 讀取與渲染邏輯 (回歸 100% 穩定的 Google Drive 串流外殼)
 // ==========================================================================
 window.loadGallery = function() {
   if (gallery) gallery.innerHTML = '<p>努力加載藏品中，請稍候...</p>';
@@ -184,24 +184,22 @@ window.loadGallery = function() {
   fetch(GAS_API_URL)
     .then(response => {
       if (!response.ok) throw new Error(`HTTP 錯誤狀態碼: ${response.status}`);
-      return response.text(); // 🛡️ 先拿純文字，防止 GAS 回傳錯誤 HTML 導致 json 解析當機
+      return response.text(); 
     })
     .then(text => {
       try {
         const data = JSON.parse(text);
-        if (!Array.isArray(data)) {
-          throw new Error(data.message || "資料庫回傳的不是正常的陣列格式！");
-        }
+        if (!Array.isArray(data)) throw new Error("資料庫回傳格式異常");
         allMemes = data;
         renderGallery(); 
       } catch (e) {
-        console.error('解析或渲染崩潰:', e);
-        if (gallery) gallery.innerHTML = `<div style="text-align:center; color:#e74c3c; width:100%;"><p><b>⚠️ 網頁內部解析發生崩潰！</b></p><p style="font-size:0.9rem;">錯誤代碼：${e.message}</p></div>`;
+        console.error('解析崩潰:', e);
+        if (gallery) gallery.innerHTML = `<div style="text-align:center; color:#e74c3c; width:100%;"><p><b>⚠️ 網頁內部解析發生崩潰！</b></p></div>`;
       }
     })
     .catch(err => {
       console.error('連線失敗:', err);
-      if (gallery) gallery.innerHTML = `<div style="text-align:center; color:#e74c3c; width:100%;"><p><b>⚠️ 無法連線到阿公的雲端伺服器</b></p><p style="font-size:0.9rem;">原因：${err.message}</p></div>`;
+      if (gallery) gallery.innerHTML = `<div style="text-align:center; color:#e74c3c; width:100%;"><p><b>⚠️ 無法連線到阿公的雲端伺服器</b></p></div>`;
     });
 }
 
@@ -225,11 +223,9 @@ function renderGallery() {
     if (itemType !== currentViewType) return false;
     if (!keyword) return true;
     
-    // 🛡️ 防禦：強制把標題(quote)轉成字串，防止純數字標題引發 toLowerCase 當機！
     const safeQuote = String(meme.quote || '').toLowerCase();
     const matchQuote = safeQuote.includes(keyword);
     
-    // 🛡️ 防禦：確保 tags 存在且為陣列，並將標籤強制轉字串比對
     const matchTags = Array.isArray(meme.tags) ? 
       meme.tags.some(tag => String(tag).toLowerCase().includes(keyword)) : false;
       
@@ -251,10 +247,10 @@ function renderGallery() {
       tagsHTML = `<div class="card-tags">${tagsList}</div>`;
     }
 
-    // 🛡️ 防禦：強制安全輸出字串
     const safeQuoteHTML = String(meme.quote || '未命名藏品');
     const safeUrl = String(meme.url || '');
 
+    // A. 靜態圖片區
     if (currentViewType === 'image') {
       card.classList.add('interactive-card');
       card.innerHTML = `
@@ -282,34 +278,20 @@ function renderGallery() {
         }
       });
       
+    // B. 影音與動圖區（全面導回 Google Drive 穩定 preview 外殼）
     } else if (currentViewType === 'video' || currentViewType === 'gif') {
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
       const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
-
-      let mediaHTML = '';
-
-      if (currentViewType === 'video') {
-        // 🎬 影片：維持 iframe，這是 Google Drive 唯一穩定的影片串流方式
-        const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
-        mediaHTML = `
-          <div class="media-wrapper video-wrapper">
-            <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
-          </div>
-        `;
-      } else if (currentViewType === 'gif') {
-        // ⚡ GIF 妥協解法：Google 嚴格封殺直連，必須改回 iframe 官方播放器。
-        // 手機版 Google 播放器強制需「點擊」才會播放 GIF。
-        const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
-        mediaHTML = `
-          <div class="media-wrapper gif-wrapper">
-            <iframe class="card-media gif-iframe" src="${iframeUrl}" allow="autoplay" style="border:none; background:#000;"></iframe>
-          </div>
-        `;
-      }
+      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
+      
+      let wrapperClass = currentViewType === 'video' ? 'video-wrapper' : 'gif-wrapper';
+      let iframeClass = currentViewType === 'video' ? 'video-iframe' : 'gif-iframe';
 
       card.innerHTML = `
-        ${mediaHTML}
+        <div class="media-wrapper ${wrapperClass}">
+          <iframe class="card-media ${iframeClass}" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
+        </div>
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
         <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
@@ -352,15 +334,6 @@ if (searchInput && searchClearBtn) {
     searchInput.focus(); 
     renderGallery(); 
   });
-}
-
-window.toggleMobileVideo = function(videoEl) {
-  if (videoEl.paused) {
-    videoEl.play();
-    videoEl.setAttribute('controls', 'true');
-  } else {
-    videoEl.pause();
-  }
 }
 
 // 啟動引擎
