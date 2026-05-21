@@ -268,21 +268,23 @@ function renderGallery() {
       let mediaHTML = '';
 
       if (currentViewType === 'video' && fileId) {
-        // ✨ 關鍵核心：將 preview 改成 direct download 節點 (uc?export=download)，變成直接的動態影片檔來源
+        // 🎬 影片直連處理：原生 video 標籤，點擊才播放以防止黑條遮擋
         const directVideoUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
-        
-        // 用 HTML5 原生 video 標籤取代吃屎的 iframe！
-        // playsinline: 防止 iPhone 播放時自動強制全螢幕
-        // controls: 顯示手機版播放、暫停、時間條按鈕
-        // preload="metadata": 只抓取影片基本資訊（長度、第一幀圖），幫手機省流量兼防黑屏
         mediaHTML = `
-          <video class="card-media" controls playsinline preload="metadata" style="background:#000;">
+          <video class="card-media" playsinline loop preload="metadata" style="background:#000; cursor:pointer;" onclick="toggleMobileVideo(this)">
             <source src="${directVideoUrl}" type="video/mp4">
             您的瀏覽器不支援影片播放 QQ
           </video>
         `;
+      } else if (currentViewType === 'gif' && fileId) {
+        // ⚡ GIF 直連處理：將其導向 Google Drive 原始圖檔直連網址 (uc?export=download)
+        // 並用網頁標準 <img> 標籤渲染，這在手機上 100% 會自動無限輪播，不再凍結！
+        const directGifUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+        mediaHTML = `
+          <img class="card-media" src="${directGifUrl}" alt="${meme.quote}" style="object-fit: cover;">
+        `;
       } else {
-        // GIF 動圖或是非 Drive 的外部影片來源，維持原本的 iframe 兼容處理
+        // 防呆備案：若不是 Google Drive 網址，則走原本的預覽外殼
         const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : meme.url;
         mediaHTML = `<iframe class="card-media" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none;"></iframe>`;
       }
@@ -350,3 +352,19 @@ if (searchInput && searchClearBtn) {
 
 // 網頁開啟時自動載入
 window.loadGallery();
+
+// ==========================================================================
+// ✨ 新增：手機版短影片點擊播放/暫停與智慧控制條切換
+// ==========================================================================
+window.toggleMobileVideo = function(videoEl) {
+  if (videoEl.paused) {
+    // 1. 播放影片
+    videoEl.play();
+    // 2. 當使用者真的點擊播放後，才把控制條叫出來，方便他調整進度和全螢幕
+    videoEl.setAttribute('controls', 'true');
+  } else {
+    // 3. 再次點擊則暫停
+    videoEl.pause();
+    // 4. 暫停時可以選擇保留或移除控制條，這裡保持顯示方便操作
+  }
+}
