@@ -474,11 +474,10 @@ function renderSingleGalleryCard(card, meme) {
 
   const safeQuoteHTML = escapeHtml(meme.quote || '未命名藏品');
   const safeUrl = String(meme.url || '');
-  const canEdit = !isGuest() && meme.uploader && meme.uploader === currentUser.username;
 
   const fileIdMatch = safeUrl.match(/id=([^&]+)/);
   const fileId = fileIdMatch ? fileIdMatch[1] : '';
-  const downloadUrl = (meme.type === 'video') ? safeUrl : (fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl);
+  const downloadUrl = fileId ? `https://drive.usercontent.com/download?id=${fileId}&export=download&confirm=t` : safeUrl;
 
   const mediaHTML = getMediaHTML(meme);
 
@@ -488,7 +487,6 @@ function renderSingleGalleryCard(card, meme) {
     ${tagsHTML}
     <div class="card-actions-wrapper">
       <a href="${downloadUrl}" target="_blank" class="download-btn"><i class="fas fa-download"></i> 點此下載${meme.type === 'video' ? '影片' : (meme.type === 'gif' ? '動圖' : '照片')}</a>
-      ${canEdit ? `<button type="button" class="gallery-edit-btn"><i class="fas fa-edit"></i> 編輯</button>` : ''}
     </div>
   `;
 
@@ -517,8 +515,44 @@ function renderSingleGalleryCard(card, meme) {
       const targetUrl = downloadBtn.getAttribute('href');
       const fileIdMatch = targetUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
+      
+      // 偵測 iOS 與 PWA 狀態
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isStandalone = window.navigator.standalone === true;
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
+      if (isIOS) {
+        if (meme.type === 'video') {
+          if (isStandalone) {
+            // iOS PWA 模式下載影片 -> 複製連結
+            try {
+              await navigator.clipboard.writeText(targetUrl);
+              alert("💡 由於 iOS 系統限制，主畫面 App 無法下載影片。\n已自動為您複製影片下載連結，請打開 Safari 瀏覽器貼上網址即可下載！");
+            } catch (err) {
+              console.error("複製失敗:", err);
+              alert(`由於 iOS 限制，請長按複製此下載連結：\n${targetUrl}`);
+            }
+          } else {
+            // iOS 一般 Safari 瀏覽器下載影片 -> 提示並在新分頁開啟
+            alert("🎬 影片將下載至您的「檔案」App 中，請於新分頁開啟後點擊下載。");
+            window.open(targetUrl, '_blank');
+          }
+        } else {
+          // iOS 圖片與 GIF -> 彈出 iOS 專屬長按儲存引導 Modal
+          const iosModal = document.getElementById('iosDownloadModal');
+          const iosOverlay = document.getElementById('iosDownloadOverlay');
+          const iosContent = document.getElementById('iosDownloadContentContainer');
+          if (iosModal && iosOverlay && iosContent) {
+            const previewImgUrl = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : safeUrl;
+            iosContent.innerHTML = `<img src="${previewImgUrl}" style="max-width: 100%; max-height: 50vh; object-fit: contain; display: block;">`;
+            iosOverlay.classList.add('active');
+            iosModal.classList.add('active');
+          }
+        }
+        return;
+      }
+      
+      // 以下為 Android / Desktop 流程 (非 iOS)
       if (meme.type === 'gif' || meme.type === 'video') {
         try {
           const tempLink = document.createElement('a');
@@ -536,6 +570,7 @@ function renderSingleGalleryCard(card, meme) {
         return;
       }
       
+      // 圖片 Blob 下載
       downloadBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在準備下載...`;
       downloadBtn.style.pointerEvents = 'none';
       
@@ -584,16 +619,8 @@ function renderSingleGalleryCard(card, meme) {
       }
     });
   }
-
-  // 綁定編輯按鈕
-  const editBtn = card.querySelector('.gallery-edit-btn');
-  if (editBtn) {
-    editBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      enterGalleryEditMode(card, meme);
-    });
-  }
 }
+
 
 function enterGalleryEditMode(card, meme) {
   card.classList.remove('interactive-card');
@@ -1195,3 +1222,26 @@ initViewHighlight();
 
 // 網頁開啟時自動載入
 window.loadGallery();
+
+// ==========================================================================
+// iOS 專用儲存導引 Modal 控制邏輯
+// ==========================================================================
+window.closeIosDownloadModal = function() {
+  const iosModal = document.getElementById('iosDownloadModal');
+  const iosOverlay = document.getElementById('iosDownloadOverlay');
+  const iosContent = document.getElementById('iosDownloadContentContainer');
+  if (iosModal) iosModal.classList.remove('active');
+  if (iosOverlay) iosOverlay.classList.remove('active');
+  setTimeout(() => {
+    if (iosContent) iosContent.innerHTML = '';
+  }, 300);
+};
+
+const closeIosDownloadBtn = document.getElementById('closeIosDownloadBtn');
+const iosDownloadOverlay = document.getElementById('iosDownloadOverlay');
+if (closeIosDownloadBtn) {
+  closeIosDownloadBtn.addEventListener('click', window.closeIosDownloadModal);
+}
+if (iosDownloadOverlay) {
+  iosDownloadOverlay.addEventListener('click', window.closeIosDownloadModal);
+}
