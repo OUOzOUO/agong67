@@ -84,28 +84,41 @@ if(imageInput) {
       return;
     }
 
-    const maxSizeMB = 10;
+    const ext = file.name.split('.').pop().toLowerCase();
+    let uploadType = 'image';
+    let maxSizeMB = 5;
+    let badgeText = '🖼️ 靜態圖片';
+    let badgeClass = 'file-type-badge badge-image';
+
+    if (ext === 'gif') {
+      uploadType = 'gif';
+      maxSizeMB = 10;
+      badgeText = '⚡ 動態 GIF';
+      badgeClass = 'file-type-badge badge-gif';
+    } else if (ext === 'mp4' || ext === 'webm' || ext === 'mov') {
+      uploadType = 'video';
+      maxSizeMB = 10;
+      badgeText = '🎬 短影片';
+      badgeClass = 'file-type-badge badge-video';
+    } else {
+      uploadType = 'image';
+      maxSizeMB = 5;
+      badgeText = '🖼️ 靜態圖片';
+      badgeClass = 'file-type-badge badge-image';
+    }
+
     if (file.size > maxSizeMB * 1024 * 1024) {
-      alert(`檔案太大了！為了保護伺服器，請上傳小於 ${maxSizeMB}MB 的檔案！`);
-      imageInput.value = ''; 
+      alert(`檔案太大了！此類型檔案（${uploadType === 'image' ? '靜態圖片' : '影片/動圖'}）最大限制為 ${maxSizeMB}MB！`);
+      imageInput.value = '';
+      fileNameDisplay.innerText = '尚未選擇檔案';
+      fileTypeBadge.style.display = 'none';
+      currentUploadFileType = 'image';
       return;
     }
 
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (ext === 'gif') {
-      currentUploadFileType = 'gif';
-      fileTypeBadge.innerText = '⚡ 動態 GIF';
-      fileTypeBadge.className = 'file-type-badge badge-gif';
-    } else if (ext === 'mp4' || ext === 'webm' || ext === 'mov') {
-      currentUploadFileType = 'video';
-      fileTypeBadge.innerText = '🎬 短影片';
-      fileTypeBadge.className = 'file-type-badge badge-video';
-    } else {
-      currentUploadFileType = 'image'; 
-      fileTypeBadge.innerText = '🖼️ 靜態圖片';
-      fileTypeBadge.className = 'file-type-badge badge-image';
-    }
-
+    currentUploadFileType = uploadType;
+    fileTypeBadge.innerText = badgeText;
+    fileTypeBadge.className = badgeClass;
     fileNameDisplay.innerText = `📄 已選擇: ${file.name}`;
     fileNameDisplay.style.color = "#1a5e63"; 
     fileTypeBadge.style.display = 'inline-block';
@@ -193,7 +206,7 @@ window.loadGallery = function() {
       try {
         const data = JSON.parse(text);
         if (!Array.isArray(data)) throw new Error("資料庫回傳格式異常");
-        allMemes = data;
+        allMemes = data.reverse(); 
         renderGallery(); 
       } catch (e) {
         console.error('解析崩潰:', e);
@@ -274,30 +287,62 @@ function renderGallery() {
           alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
         } catch (err) {
           navigator.clipboard.writeText(safeUrl)
-            .then(() => alert(`圖片本體下載失敗，但已複製「圖片網址」！`))
+            .then(() => alert(`圖片本體複製失敗，但已複製「圖片網址」！`))
             .catch(e => console.error(e));
         } finally {
           card.style.opacity = '1';
         }
       });
       
-    // B. 影音與動圖區（全面導回 Google Drive 穩定 preview 外殼）
-    } else if (currentViewType === 'video' || currentViewType === 'gif') {
+    // B. 動態 GIF 區
+    } else if (currentViewType === 'gif') {
+      card.classList.add('interactive-card');
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
-      const fileTypeName = currentViewType === 'video' ? '影片' : '動圖';
+      const directUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl;
+      
+      card.innerHTML = `
+        <img class="card-media" src="${directUrl}" alt="${safeQuoteHTML}">
+        <p class="card-title">${safeQuoteHTML}</p>
+        ${tagsHTML}
+      `;
+
+      card.addEventListener('click', async () => {
+        try {
+          card.style.opacity = '0.5';
+          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(directUrl);
+          const response = await fetch(proxyUrl);
+          if (!response.ok) throw new Error('下載動圖失敗');
+          let blob = await response.blob();
+          if (blob.type !== 'image/gif') blob = new Blob([blob], {type: 'image/gif'});
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          alert(`已成功複製動圖：${safeQuoteHTML}！\n可以直接貼上了！`);
+        } catch (err) {
+          console.warn("直接複製 GIF 失敗，執行 Fallback 複製網址:", err);
+          navigator.clipboard.writeText(directUrl)
+            .then(() => alert(`因行動裝置或瀏覽器限制，無法直接複製動圖檔案，但已複製「動圖直連網址」！\n直接貼上即可在社群軟體顯示動圖！`))
+            .catch(e => {
+              console.error(e);
+              alert("複製失敗，請長按圖片進行複製或下載！");
+            });
+        } finally {
+          card.style.opacity = '1';
+        }
+      });
+
+    // C. 影音區
+    } else if (currentViewType === 'video') {
+      const fileIdMatch = safeUrl.match(/id=([^&]+)/);
+      const fileId = fileIdMatch ? fileIdMatch[1] : '';
       const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
       
-      let wrapperClass = currentViewType === 'video' ? 'video-wrapper' : 'gif-wrapper';
-      let iframeClass = currentViewType === 'video' ? 'video-iframe' : 'gif-iframe';
-
       card.innerHTML = `
-        <div class="media-wrapper ${wrapperClass}">
-          <iframe class="card-media ${iframeClass}" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
+        <div class="media-wrapper video-wrapper">
+          <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
         </div>
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
-        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始${fileTypeName} / 下載</a>
+        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始影片 / 下載</a>
       `;
     }
 
