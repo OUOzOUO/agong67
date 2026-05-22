@@ -273,25 +273,25 @@ function renderGallery() {
         <img class="card-media" src="${safeUrl}" alt="${safeQuoteHTML}">
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
+        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始照片 / 下載</a>
       `;
 
-      card.addEventListener('click', async () => {
+      card.addEventListener('click', async (e) => {
+        if (e.target.closest('.download-btn')) return;
         try {
           card.style.opacity = '0.5';
-          // 同步寫入 HTML 圖片標籤與純文字網址，讓社群軟體 (Line, Discord, 手機等) 直接貼上圖片
-          const htmlBlob = new Blob([`<img src="${safeUrl}">`], { type: 'text/html' });
-          const textBlob = new Blob([safeUrl], { type: 'text/plain' });
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              'text/html': htmlBlob,
-              'text/plain': textBlob
-            })
-          ]);
+          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
+          const response = await fetch(proxyUrl);
+          if (!response.ok) throw new Error('阻擋下載');
+          let blob = await response.blob();
+          if (blob.type !== 'image/png') blob = new Blob([blob], {type: 'image/png'});
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
           alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
         } catch (err) {
-          console.warn("直接複製圖片失敗，執行 Fallback 複製網址:", err);
-          navigator.clipboard.writeText(safeUrl)
-            .then(() => alert(`圖片已複製為「圖片網址」！`))
+          console.warn("Blob 複製失敗，退回複製代理網址:", err);
+          const fallbackUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
+          navigator.clipboard.writeText(fallbackUrl)
+            .then(() => alert(`圖片已複製為「圖片網址」！\n在 LINE、Messenger 貼上送出後會自動展開成圖片哦！`))
             .catch(e => console.error(e));
         } finally {
           card.style.opacity = '1';
@@ -300,7 +300,6 @@ function renderGallery() {
       
     // B. 動態 GIF 區
     } else if (currentViewType === 'gif') {
-      card.classList.add('interactive-card');
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
       // 使用 lh3.googleusercontent.com/d/ID 解決大檔案 Google Drive 防毒警告導致的破圖問題，且保持動態 GIF 效果
@@ -310,43 +309,22 @@ function renderGallery() {
         <img class="card-media" src="${directUrl}" alt="${safeQuoteHTML}">
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
+        <a href="${directUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始動圖 / 下載</a>
       `;
-
-      card.addEventListener('click', async () => {
-        try {
-          card.style.opacity = '0.5';
-          // 同步寫入 HTML 圖片標籤與純文字網址，讓社群軟體 (Line, Discord, 手機等) 直接貼上動圖
-          const htmlBlob = new Blob([`<img src="${directUrl}">`], { type: 'text/html' });
-          const textBlob = new Blob([directUrl], { type: 'text/plain' });
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              'text/html': htmlBlob,
-              'text/plain': textBlob
-            })
-          ]);
-          alert(`已成功複製動圖：${safeQuoteHTML}！\n可以直接貼上了！`);
-        } catch (err) {
-          console.warn("直接複製 GIF 失敗，執行 Fallback 複製網址:", err);
-          navigator.clipboard.writeText(directUrl)
-            .then(() => alert(`已複製動圖直連網址！\n在社群軟體貼上即可自動顯示動圖。`))
-            .catch(e => {
-              console.error(e);
-              alert("複製失敗，請長按圖片進行複製或下載！");
-            });
-        } finally {
-          card.style.opacity = '1';
-        }
-      });
 
     // C. 影音區
     } else if (currentViewType === 'video') {
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
-      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
+      // 使用 Google Drive 的直連下載串流連結，讓 HTML5 原生 video 播放，完全免去 Google 網頁播放器在手機上的控制項遮擋問題
+      const videoDirectUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl;
       
       card.innerHTML = `
         <div class="media-wrapper video-wrapper">
-          <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
+          <video class="card-media" controls preload="metadata" playsinline style="background:#000;">
+            <source src="${videoDirectUrl}" type="video/mp4">
+            您的瀏覽器不支持播放此影片。
+          </video>
         </div>
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
