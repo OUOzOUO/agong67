@@ -230,133 +230,14 @@ function renderAdminMemesFilter() {
     // 套用我們剛寫的 CSS 類名，增加 hover 效果
     card.className = 'admin-user-card admin-meme-row-card';
     
-    const isVideo = meme.type === 'video';
-    const previewHTML = isVideo ? 
-      `<div style="width:60px; height:60px; background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff;"><i class="fas fa-video"></i></div>` :
-      `<img src="${meme.url}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">`;
-
-    const uploaderName = meme.uploader || "前朝遺老 / 匿名訪客";
-
-    card.innerHTML = `
-      <div style="display:flex; align-items:center; gap:15px; flex:1; min-width:0;">
-        ${previewHTML}
-        <div style="flex:1; min-width:0;">
-          <h4 style="margin:0; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${meme.quote || "未命名藏品"}</h4>
-          <p style="margin:2px 0 0 0; font-size:0.8rem; color:#7f8c8d;"><i class="fas fa-user-edit"></i> 貢獻者：<strong style="color:var(--main-color);">${uploaderName}</strong></p>
-        </div>
-      </div>
-      <div class="meme-actions" style="display:flex; gap:8px;">
-        <button class="action-btn upgrade edit-meme-btn" style="background:#3498db; padding:8px 12px; margin:0;"><i class="fas fa-edit"></i> 編輯</button>
-        <button class="action-btn downgrade" onclick="deleteMemeFromAdmin('${meme.url}', event)" style="background:#e74c3c; padding:8px 12px; margin:0;"><i class="fas fa-trash-alt"></i> 銷毀</button>
-      </div>
-    `;
-
-    // 綁定就地編輯按鈕事件
-    const editBtn = card.querySelector('.edit-meme-btn');
-    if (editBtn) {
-      editBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // 阻止觸發卡片點擊跳轉
-        
-        const originalContent = card.innerHTML;
-        const originalStyleAlign = card.style.alignItems;
-        
-        card.style.alignItems = 'stretch';
-        card.style.flexDirection = 'column';
-        
-        const tagsString = Array.isArray(meme.tags) ? meme.tags.join(',') : '';
-        
-        card.innerHTML = `
-          <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-              ${previewHTML}
-              <div style="flex: 1; min-width: 0;">
-                <strong style="color: var(--main-color); font-size: 1rem;">編輯藏品資料</strong>
-                <p style="margin:2px 0 0 0; font-size:0.75rem; color:#7f8c8d;">上傳者：${uploaderName}</p>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">檔案名稱</label>
-                <input type="text" class="edit-quote-input" value="${escapeHtml(meme.quote || '')}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">搜尋關鍵字 (多個以逗號或空白分隔)</label>
-                <input type="text" class="edit-tags-input" value="${escapeHtml(tagsString)}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
-              </div>
-            </div>
-            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
-              <button class="action-btn cancel-edit-btn" style="background:#95a5a6; padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-times"></i> 取消</button>
-              <button class="action-btn save-edit-btn" style="background:var(--accent-color); padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-save"></i> 儲存</button>
-            </div>
-          </div>
-        `;
-        
-        // 取消按鈕
-        card.querySelector('.cancel-edit-btn').addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          card.style.alignItems = originalStyleAlign;
-          card.style.flexDirection = '';
-          renderAdminMemesFilter(); // 還原卡片
-        });
-        
-        // 儲存按鈕
-        card.querySelector('.save-edit-btn').addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          
-          const newQuote = card.querySelector('.edit-quote-input').value.trim();
-          const rawTags = card.querySelector('.edit-tags-input').value.trim();
-          const newTags = rawTags.replace(/[，、\s]+/g, ',').replace(/^,+|,+$/g, '');
-          
-          if (!newQuote) {
-            alert('檔案名稱不能為空！');
-            return;
-          }
-          
-          const saveBtn = ev.currentTarget;
-          saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
-          saveBtn.disabled = true;
-          
-          fetch(GAS_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-              action: 'updateMeme',
-              operator: currentUser.username,
-              token: currentUser.token,
-              targetUrl: meme.url,
-              quote: newQuote,
-              tags: newTags
-            })
-          })
-          .then(res => res.json())
-          .then(result => {
-            if (result.status === 'success') {
-              alert('✅ 儲存成功！');
-              meme.quote = newQuote;
-              meme.tags = newTags ? newTags.split(',') : [];
-              renderAdminMemesFilter();
-              if (typeof window.loadGallery === 'function') {
-                window.loadGallery();
-              }
-            } else {
-              alert('❌ 儲存失敗：' + result.message);
-              saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存';
-              saveBtn.disabled = false;
-            }
-          })
-          .catch(() => {
-            alert('網路通訊錯誤');
-            saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存';
-            saveBtn.disabled = false;
-          });
-        });
-      });
-    }
+    // 初始化卡片內容（預設唯讀模式）
+    renderSingleMemeCard(card, meme);
 
     // ==========================================================================
-    // ✨ 新增：點擊作品錨點自動跳轉功能
+    // ✨ 新增：點擊作品錨點自動跳轉功能 (綁定在卡片元素上，切換編輯模式時依然有效)
     // ==========================================================================
     card.addEventListener('click', (event) => {
-      // 如果點到的是按鈕或輸入框，不要觸發跳轉
+      // 如果點到的是按鈕、輸入框，不要觸發跳轉
       if (event.target.closest('button') || event.target.closest('input')) return;
 
       if (confirm(`🔍 想要立刻前往前端展覽館查看『${meme.quote || "這件藏品"}』嗎？`)) {
@@ -397,6 +278,144 @@ function renderAdminMemesFilter() {
     });
 
     adminMemeCardsContainer.appendChild(card);
+  });
+}
+
+// ==========================================================================
+// 渲染單張藏品卡片（一般/唯讀模式）
+// ==========================================================================
+function renderSingleMemeCard(card, meme) {
+  // 還原原本的對齊與排列樣式
+  card.style.alignItems = '';
+  card.style.flexDirection = '';
+
+  const isVideo = meme.type === 'video';
+  const previewHTML = isVideo ? 
+    `<div style="width:60px; height:60px; background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff;"><i class="fas fa-video"></i></div>` :
+    `<img src="${meme.url}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">`;
+
+  const uploaderName = meme.uploader || "前朝遺老 / 匿名訪客";
+
+  card.innerHTML = `
+    <div style="display:flex; align-items:center; gap:15px; flex:1; min-width:0;">
+      ${previewHTML}
+      <div style="flex:1; min-width:0;">
+        <h4 style="margin:0; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(meme.quote || "未命名藏品")}</h4>
+        <p style="margin:2px 0 0 0; font-size:0.8rem; color:#7f8c8d;"><i class="fas fa-user-edit"></i> 貢獻者：<strong style="color:var(--main-color);">${uploaderName}</strong></p>
+      </div>
+    </div>
+    <div class="meme-actions" style="display:flex; gap:8px;">
+      <button class="action-btn upgrade edit-meme-btn" style="background:#3498db; padding:8px 12px; margin:0;"><i class="fas fa-edit"></i> 編輯</button>
+      <button class="action-btn downgrade" onclick="deleteMemeFromAdmin('${meme.url}', event)" style="background:#e74c3c; padding:8px 12px; margin:0;"><i class="fas fa-trash-alt"></i> 銷毀</button>
+    </div>
+  `;
+
+  // 綁定編輯按鈕
+  const editBtn = card.querySelector('.edit-meme-btn');
+  if (editBtn) {
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止觸發卡片點擊跳轉
+      enterEditMode(card, meme);
+    });
+  }
+}
+
+// ==========================================================================
+// 進入單張藏品的編輯模式
+// ==========================================================================
+function enterEditMode(card, meme) {
+  card.style.alignItems = 'stretch';
+  card.style.flexDirection = 'column';
+
+  const isVideo = meme.type === 'video';
+  const previewHTML = isVideo ? 
+    `<div style="width:60px; height:60px; background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff;"><i class="fas fa-video"></i></div>` :
+    `<img src="${meme.url}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">`;
+
+  const uploaderName = meme.uploader || "前朝遺老 / 匿名訪客";
+  const tagsString = Array.isArray(meme.tags) ? meme.tags.join(',') : '';
+
+  card.innerHTML = `
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        ${previewHTML}
+        <div style="flex: 1; min-width: 0;">
+          <strong style="color: var(--main-color); font-size: 1rem;">編輯藏品資料</strong>
+          <p style="margin:2px 0 0 0; font-size:0.75rem; color:#7f8c8d;">上傳者：${uploaderName}</p>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">檔案名稱</label>
+          <input type="text" class="edit-quote-input" value="${escapeHtml(meme.quote || '')}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">搜尋關鍵字 (多個以逗號或空白分隔)</label>
+          <input type="text" class="edit-tags-input" value="${escapeHtml(tagsString)}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+        <button class="action-btn cancel-edit-btn" style="background:#95a5a6; padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-times"></i> 取消</button>
+        <button class="action-btn save-edit-btn" style="background:var(--accent-color); padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-save"></i> 儲存</button>
+      </div>
+    </div>
+  `;
+
+  // 取消按鈕
+  card.querySelector('.cancel-edit-btn').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    renderSingleMemeCard(card, meme); // 僅還原此張卡片
+  });
+
+  // 儲存按鈕
+  card.querySelector('.save-edit-btn').addEventListener('click', (ev) => {
+    ev.stopPropagation();
+
+    const newQuote = card.querySelector('.edit-quote-input').value.trim();
+    const rawTags = card.querySelector('.edit-tags-input').value.trim();
+    const newTags = rawTags.replace(/[，、\s]+/g, ',').replace(/^,+|,+$/g, '');
+
+    if (!newQuote) {
+      alert('檔案名稱不能為空！');
+      return;
+    }
+
+    const saveBtn = ev.currentTarget;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
+    saveBtn.disabled = true;
+
+    fetch(GAS_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'updateMeme',
+        operator: currentUser.username,
+        token: currentUser.token,
+        targetUrl: meme.url,
+        quote: newQuote,
+        tags: newTags
+      })
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result.status === 'success') {
+        alert('✅ 儲存成功！');
+        meme.quote = newQuote;
+        meme.tags = newTags ? newTags.split(',') : [];
+        renderSingleMemeCard(card, meme); // 僅還原此張卡片為唯讀狀態
+        if (typeof window.loadGallery === 'function') {
+          window.loadGallery();
+        }
+      } else {
+        alert('❌ 儲存失敗：' + result.message);
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存';
+        saveBtn.disabled = false;
+      }
+    })
+    .catch(() => {
+      alert('網路通訊錯誤');
+      saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存';
+      saveBtn.disabled = false;
+    });
   });
 }
 

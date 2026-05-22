@@ -1001,9 +1001,10 @@ video.card-media {
   transform: translateY(-2px); /* 懸停時微浮起 */
 }
 
-/* 2. 重頭戲：把「首頁搜尋框」與「後台審核搜尋框」本體徹底撐大 */
+/* 2. 重頭戲：把「首頁搜尋框」、「後台審核搜尋框」與「個人管理搜尋框」本體徹底撐大 */
 #searchInput, 
-#adminMemeSearchInput {
+#adminMemeSearchInput,
+#uploaderMemeSearchInput {
   width: 100% !important;
   height: 55px !important;        /* 🔥 完美撐高到 55px */
   padding: 0 55px 0 55px !important; /* 調整內襯：左邊給放大鏡，右邊給大叉叉 */
@@ -1016,9 +1017,10 @@ video.card-media {
   box-sizing: border-box !important;
 }
 
-/* 輸入框聚焦時的醒目外框 (雙搜尋框同步) */
+/* 輸入框聚焦時的醒目外框 (三搜尋框同步) */
 #searchInput:focus,
-#adminMemeSearchInput:focus {
+#adminMemeSearchInput:focus,
+#uploaderMemeSearchInput:focus {
   outline: none !important;
   border-color: var(--main-color) !important;
   box-shadow: 0 0 0 4px rgba(26, 94, 99, 0.15) !important; 
@@ -1068,4 +1070,268 @@ video.card-media {
 .search-clear-icon:hover,
 #adminMemeSearchClearBtn:hover {
   color: #e74c3c !important; /* 懸停警告紅 */
+}
+
+/* ==========================================================================
+   多檔案上傳卡片與編輯樣式
+   ========================================================================== */
+.multi-upload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.multi-upload-item-card {
+  background: #fdfdfd;
+  border: 1px solid #e0dbd3;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s, border-color 0.2s;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.multi-upload-item-card:hover {
+  border-color: var(--main-color);
+  transform: translateY(-2px);
+}
+
+.multi-upload-item-card .item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  gap: 10px;
+}
+
+.multi-upload-item-card .item-name {
+  font-weight: bold;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.multi-upload-item-card .item-remove-btn {
+  background: transparent;
+  border: none;
+  color: #95a5a6;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multi-upload-item-card .item-remove-btn:hover {
+  color: #e74c3c;
+}
+
+.multi-upload-item-card .item-preview-btn {
+  background: transparent;
+  border: none;
+  color: #95a5a6;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+}
+
+.multi-upload-item-card .item-preview-btn:hover {
+  color: var(--main-color);
+}
+
+.multi-upload-item-card .item-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+@media (max-width: 576px) {
+  .multi-upload-item-card .item-body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* ==========================================================================
+   上傳者自主管理與首頁編輯相關樣式
+   ========================================================================== */
+
+/* 個人管理二級小分類按鈕 */
+.uploader-sub-btn {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.uploader-sub-btn:hover {
+  background: #e0e0e0;
+}
+
+.uploader-sub-btn.active {
+  background: var(--main-color);
+  color: white;
+  border-color: var(--main-color);
+  box-shadow: 0 4px 10px rgba(26, 94, 99, 0.2);
+}
+
+/* 首頁藝廊卡片編輯功能樣式 */
+.card-actions-wrapper {
+  display: flex;
+  gap: 10px;
+  margin: 0 15px 15px 15px;
+}
+
+.card-actions-wrapper .download-btn {
+  flex: 1;
+  margin: 0 !important;
+}
+
+.gallery-edit-btn {
+  background: #3498db;
+  color: white;
+  border: 1px solid #2980b9;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.gallery-edit-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+.edit-form-container {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+.edit-form-container .input-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.edit-form-container .input-group label {
+  font-weight: bold;
+  color: var(--main-color);
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.edit-form-container .input-group input {
+  padding: 8px 12px;
+  border: 1px solid #e0dbd3;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  width: 100%;
+  transition: var(--transition-base);
+  background: #fff;
+}
+
+.edit-form-container .input-group input:focus {
+  outline: none;
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(26, 94, 99, 0.1);
+}
+
+.gallery-cancel-edit-btn {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.gallery-cancel-edit-btn:hover {
+  background: #7f8c8d;
+}
+
+.gallery-save-edit-btn {
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.gallery-save-edit-btn:hover {
+  background: #e68a00;
+}
+
+/* 讓個人管理卡片也具備點擊手勢提示，並比照大總管樣式 */
+.uploader-meme-row-card {
+  cursor: pointer;
+}
+.uploader-meme-row-card:hover {
+  border-color: var(--main-color) !important;
+}
+
+/* 側邊欄特定按鈕樣式與 active 狀態覆寫，防止文字看不見與色彩統一 */
+#uploaderManageNavBtn {
+  color: var(--main-color);
+}
+#uploaderManageNavBtn.active {
+  background: var(--main-color);
+  color: white !important;
+  border-color: var(--main-color);
+}
+#uploaderManageNavBtn.active i {
+  color: var(--accent-color) !important;
+}
+
+#adminNavBtn {
+  color: #9b59b6;
+}
+#adminNavBtn.active {
+  background: #9b59b6;
+  color: white !important;
+  border-color: #9b59b6;
+  box-shadow: 0 8px 20px rgba(155, 89, 182, 0.3);
+}
+#adminNavBtn.active i {
+  color: var(--accent-color) !important;
 }

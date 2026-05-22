@@ -32,6 +32,7 @@ const userStatusArea = document.getElementById('userStatusArea');
 const loginNavBtn = document.getElementById('loginNavBtn');
 const logoutNavBtn = document.getElementById('logoutNavBtn');
 const adminNavBtn = document.getElementById('adminNavBtn');
+const uploaderManageNavBtn = document.getElementById('uploaderManageNavBtn');
 const uploadNavBtn = document.querySelector('[data-target="uploadView"]');
 
 let isRegisterMode = false; 
@@ -53,6 +54,7 @@ function updateAuthUI() {
     if (loginNavBtn) loginNavBtn.style.display = 'flex';
     if (logoutNavBtn) logoutNavBtn.style.display = 'none';
     if (adminNavBtn) adminNavBtn.style.display = 'none';
+    if (uploaderManageNavBtn) uploaderManageNavBtn.style.display = 'none';
     
     if (uploadNavBtn) {
       uploadNavBtn.style.opacity = '0.5';
@@ -100,6 +102,9 @@ function updateAuthUI() {
     
     if (adminNavBtn) {
       adminNavBtn.style.display = isAdmin() ? 'flex' : 'none';
+    }
+    if (uploaderManageNavBtn) {
+      uploaderManageNavBtn.style.display = (currentUser.role === 'member') ? 'flex' : 'none';
     }
   }
 }
@@ -306,7 +311,7 @@ if (loginNavBtn) {
 
 if (logoutNavBtn) {
   logoutNavBtn.addEventListener('click', () => {
-    if (confirm('確定要登出嗎？登出後就不能上傳酷東西了喔！')) {
+    if (confirm('確定要登出嗎？')) {
       currentUser = { username: '訪客', role: 'guest' };
       localStorage.removeItem('67net_user');
       updateAuthUI();
@@ -324,13 +329,13 @@ if (uploadNavBtn) {
   uploadNavBtn.addEventListener('click', (e) => {
     if (isGuest()) {
       e.stopImmediatePropagation(); 
-      alert('🛑 嗶嗶！您目前尚未登入！\n請先登入並等待管理員審核。');
+      alert('🛑 欸欸欸！您目前尚未登入！\n請先登入並等待管理員審核。');
       openAuthModal(); 
       if (typeof window.closeDrawerFunc === 'function') window.closeDrawerFunc();
     } else if (currentUser.role !== 'member' && currentUser.role !== 'admin') {
       // 如果有登入，但只是「有登入的人」，也予以攔截
       e.stopImmediatePropagation();
-      alert('🛑 嗶嗶！您目前的身份是「有登入的人」，尚未獲得 VIP 上傳權限！\n請聯絡大總管幫您在後台放行喔！');
+      alert('🛑 欸欸欸！您目前的身份是「有登入的人」，尚未獲得 VIP 上傳權限！\n請聯絡管理員提升權限！');
       if (typeof window.closeDrawerFunc === 'function') window.closeDrawerFunc();
     }
   });

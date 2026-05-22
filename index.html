@@ -20,7 +20,7 @@
   <meta name="apple-mobile-web-app-title" content="阿公67網">
   <meta name="theme-color" content="#1a5e63">
 
-  <link rel="stylesheet" href="style.css?v=67.13">
+  <link rel="stylesheet" href="style.css?v=68.01">
 </head>
 <body>
 
@@ -53,8 +53,10 @@
       <button class="nav-btn" data-target="uploadView">
         <i class="fas fa-cloud-upload-alt"></i> ☁️ 貢獻新藏品
       </button>
-      
-      <button id="adminNavBtn" class="nav-btn" data-target="adminView" style="display:none; color:#9b59b6;">
+      <button id="uploaderManageNavBtn" class="nav-btn" data-target="uploaderManageView" style="display:none;">
+        <i class="fas fa-tasks"></i> 📋 上傳藏品審核
+      </button>
+      <button id="adminNavBtn" class="nav-btn" data-target="adminView" style="display:none;">
       <i class="fas fa-user-shield"></i> 👑 大總管審核後台
       </button>
 
@@ -86,8 +88,11 @@
         </div>
       </header>
       
-      <div class="gallery-meta">
-        <h2 id="galleryTitle"><i class="fas fa-image"></i> 🖼️ 靜態圖片區</h2>
+      <div class="gallery-meta" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
+        <h2 id="galleryTitle" style="margin:0;"><i class="fas fa-image"></i> 🖼️ 靜態圖片區</h2>
+        <button id="randomCopyBtn" class="action-btn upgrade" style="display:none; align-items:center; gap:8px; background:var(--accent-color); box-shadow: 0 4px 0 #b37400; padding:10px 18px; font-size:0.95rem; border-radius:12px; margin:0;">
+          <i class="fas fa-random"></i>  隨機複製一張
+        </button>
       </div>
       <div id="gallery" class="gallery-container"></div>
     </section>
@@ -103,9 +108,9 @@
           <div class="upload-controls">
             <div class="file-drop-area">
               <label for="imageInput" class="custom-file-upload large-btn">
-                <i class="fas fa-folder-open fa-2x"></i> <br>點擊選擇檔案
+                <i class="fas fa-folder-open fa-2x"></i> <br>點擊選擇檔案 (最多 5 個)
               </label>
-              <input type="file" id="imageInput" accept="image/jpeg, image/png, image/webp, image/gif, video/mp4">
+              <input type="file" id="imageInput" accept="image/jpeg, image/png, image/webp, image/gif, video/mp4" multiple>
               
               <div style="margin-top: 15px;">
                 <span id="fileNameDisplay" class="file-name-display">尚未選擇檔案</span>
@@ -113,17 +118,51 @@
               </div>
             </div>
             
-            <div class="input-group">
-              <label>檔案名稱</label>
-              <input type="text" id="quoteInput" placeholder="請輸入檔案名稱">
-            </div>
-            <div class="input-group">
-              <label>搜尋關鍵字 (標籤)</label>
-              <input type="text" id="tagsInput" placeholder="需使用空白 逗號 分號分隔">
+            <div id="multiUploadList" class="multi-upload-list" style="display:none; flex-direction:column; gap:15px; margin-top:10px; width:100%;"></div>
+            
+            <div id="singleUploadFields" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+              <div class="input-group">
+                <label>檔案名稱</label>
+                <input type="text" id="quoteInput" placeholder="請輸入檔案名稱">
+              </div>
+              <div class="input-group">
+                <label>搜尋關鍵字 (標籤)</label>
+                <input type="text" id="tagsInput" placeholder="需使用空白 逗號 分號分隔">
+              </div>
             </div>
             
             <button id="uploadButton" class="submit-btn">確定上傳藏品</button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="uploaderManageView" class="view-section">
+      <header class="upload-header">
+        <h1>上傳藏品<span class="highlight">審核管理</span></h1>
+        <p class="subtitle">在這裡編輯或銷毀您自己上傳的所有藏品</p>
+      </header>
+      <div class="upload-page-container">
+        <div class="upload-card" style="max-width: 800px; width:100%;">
+          
+          <div class="search-wrapper" style="width: 100%; margin-bottom: 15px;">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="uploaderMemeSearchInput" placeholder="輸入關鍵字搜尋您自己的藏品...">
+            <i class="fas fa-times-circle search-clear-icon" id="uploaderMemeSearchClearBtn" title="清空搜尋"></i>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-bottom:15px; justify-content:center; width:100%; flex-wrap:wrap;">
+            <button class="uploader-sub-btn active" data-type="image">🖼️ 管理圖片</button>
+            <button class="uploader-sub-btn" data-type="gif">⚡ 管理 GIF</button>
+            <button class="uploader-sub-btn" data-type="video">🎬 管理影片</button>
+          </div>
+
+          <h3 id="uploaderMemeSubTitle" style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 1rem;"><i class="fas fa-eye"></i> 當前正在管理：🖼️ 靜態圖片</h3>
+          
+          <div id="uploaderMemeCardsContainer" style="display:flex; flex-direction:column; gap:15px; width:100%;">
+            <p style="text-align:center;">載入個人藏品中...</p>
+          </div>
+          
         </div>
       </div>
     </section>
@@ -210,8 +249,20 @@
     </form>
   </div> 
 
-  <script src="auth.js?v=67.22"></script>
-  <script src="admin.js?v=67.22"></script>
-  <script src="script.js?v=67.22"></script>
+  <!-- 檔案預覽 Modal -->
+  <div id="previewOverlay" class="auth-overlay"></div>
+  <div id="previewModal" class="auth-modal" style="max-width: 600px; width: 90%; padding: 25px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--main-color); padding-bottom: 10px; margin-bottom: 15px;">
+      <h2 id="previewTitle" style="margin: 0; font-size: 1.4rem; color: var(--main-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%;">檔案預覽</h2>
+      <span id="closePreviewBtn" style="cursor: pointer; font-size: 1.5rem; color: #95a5a6; transition: color 0.2s;"><i class="fas fa-times"></i></span>
+    </div>
+    <div id="previewContentContainer" style="display: flex; justify-content: center; align-items: center; max-height: 70vh; overflow: auto; background: #000; border-radius: 8px;">
+      <!-- JS 動態插入預覽內容 -->
+    </div>
+  </div>
+
+  <script src="auth.js?v=67.23"></script>
+  <script src="admin.js?v=67.23"></script>
+  <script src="script.js?v=67.23"></script>
 </body>
 </html>
