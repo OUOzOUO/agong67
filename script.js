@@ -284,13 +284,43 @@ function renderGallery() {
         if (e.target.closest('.download-btn')) return;
         try {
           card.style.opacity = '0.5';
-          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
-          const response = await fetch(proxyUrl);
-          if (!response.ok) throw new Error('阻擋下載');
-          let blob = await response.blob();
-          if (blob.type !== 'image/png') blob = new Blob([blob], {type: 'image/png'});
-          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-          alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
+          if (!navigator.clipboard || !window.ClipboardItem) {
+            throw new Error('瀏覽器不支援 Clipboard API');
+          }
+          
+          // Force output as png to ensure clipboard compatibility across all browsers (especially Safari)
+          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl) + "&output=png";
+
+          // iOS/Safari has a strict user gesture requirement for clipboard writes.
+          // It requires navigator.clipboard.write to be called synchronously with a Promise
+          // rather than waiting for fetch to resolve first.
+          const isIOSorSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                                /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+          if (isIOSorSafari) {
+            const clipboardPromise = fetch(proxyUrl)
+              .then(res => {
+                if (!res.ok) throw new Error('無法取得圖片');
+                return res.blob();
+              });
+
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                'image/png': clipboardPromise
+              })
+            ]);
+            alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
+          } else {
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('無法取得圖片');
+            const blob = await response.blob();
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                'image/png': blob
+              })
+            ]);
+            alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
+          }
         } catch (err) {
           console.warn("Blob 複製失敗，退回複製代理網址:", err);
           const fallbackUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);

@@ -564,6 +564,21 @@ footer {
   .video-wrapper .video-iframe {
     height: 320px; /* 手機版拉高到 320px，提供影片充足播放預覽空間，防止控制項擋住 */
   }
+
+  /* 後台大總管頁面 RWD 調整，防止按鈕與文字擠壓 */
+  .admin-user-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+  
+  .admin-user-card .user-actions,
+  .admin-user-card .meme-actions {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 5px;
+  }
 }
 /* ==========================================================================
    全端升級專屬：影片、徽章與下載按鈕樣式

@@ -229,7 +229,6 @@ function renderAdminMemesFilter() {
     const card = document.createElement('div');
     // 套用我們剛寫的 CSS 類名，增加 hover 效果
     card.className = 'admin-user-card admin-meme-row-card';
-    card.style.alignItems = 'center';
     
     const isVideo = meme.type === 'video';
     const previewHTML = isVideo ? 
@@ -246,7 +245,7 @@ function renderAdminMemesFilter() {
           <p style="margin:2px 0 0 0; font-size:0.8rem; color:#7f8c8d;"><i class="fas fa-user-edit"></i> 貢獻者：<strong style="color:var(--main-color);">${uploaderName}</strong></p>
         </div>
       </div>
-      <div style="display:flex; gap:8px;">
+      <div class="meme-actions" style="display:flex; gap:8px;">
         <button class="action-btn upgrade edit-meme-btn" style="background:#3498db; padding:8px 12px; margin:0;"><i class="fas fa-edit"></i> 編輯</button>
         <button class="action-btn downgrade" onclick="deleteMemeFromAdmin('${meme.url}', event)" style="background:#e74c3c; padding:8px 12px; margin:0;"><i class="fas fa-trash-alt"></i> 銷毀</button>
       </div>
