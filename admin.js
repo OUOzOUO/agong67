@@ -247,16 +247,118 @@ function renderAdminMemesFilter() {
         </div>
       </div>
       <div style="display:flex; gap:8px;">
+        <button class="action-btn upgrade edit-meme-btn" style="background:#3498db; padding:8px 12px; margin:0;"><i class="fas fa-edit"></i> 編輯</button>
         <button class="action-btn downgrade" onclick="deleteMemeFromAdmin('${meme.url}', event)" style="background:#e74c3c; padding:8px 12px; margin:0;"><i class="fas fa-trash-alt"></i> 銷毀</button>
       </div>
     `;
+
+    // 綁定就地編輯按鈕事件
+    const editBtn = card.querySelector('.edit-meme-btn');
+    if (editBtn) {
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // 阻止觸發卡片點擊跳轉
+        
+        const originalContent = card.innerHTML;
+        const originalStyleAlign = card.style.alignItems;
+        
+        card.style.alignItems = 'stretch';
+        card.style.flexDirection = 'column';
+        
+        const tagsString = Array.isArray(meme.tags) ? meme.tags.join(',') : '';
+        
+        card.innerHTML = `
+          <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              ${previewHTML}
+              <div style="flex: 1; min-width: 0;">
+                <strong style="color: var(--main-color); font-size: 1rem;">編輯藏品資料</strong>
+                <p style="margin:2px 0 0 0; font-size:0.75rem; color:#7f8c8d;">上傳者：${uploaderName}</p>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">檔案名稱</label>
+                <input type="text" class="edit-quote-input" value="${escapeHtml(meme.quote || '')}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">搜尋關鍵字 (多個以逗號或空白分隔)</label>
+                <input type="text" class="edit-tags-input" value="${escapeHtml(tagsString)}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+              <button class="action-btn cancel-edit-btn" style="background:#95a5a6; padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-times"></i> 取消</button>
+              <button class="action-btn save-edit-btn" style="background:var(--accent-color); padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-save"></i> 儲存</button>
+            </div>
+          </div>
+        `;
+        
+        // 取消按鈕
+        card.querySelector('.cancel-edit-btn').addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          card.style.alignItems = originalStyleAlign;
+          card.style.flexDirection = '';
+          renderAdminMemesFilter(); // 還原卡片
+        });
+        
+        // 儲存按鈕
+        card.querySelector('.save-edit-btn').addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          
+          const newQuote = card.querySelector('.edit-quote-input').value.trim();
+          const rawTags = card.querySelector('.edit-tags-input').value.trim();
+          const newTags = rawTags.replace(/[，、\s]+/g, ',').replace(/^,+|,+$/g, '');
+          
+          if (!newQuote) {
+            alert('檔案名稱不能為空！');
+            return;
+          }
+          
+          const saveBtn = ev.currentTarget;
+          saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
+          saveBtn.disabled = true;
+          
+          fetch(GAS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'updateMeme',
+              operator: currentUser.username,
+              token: currentUser.token,
+              targetUrl: meme.url,
+              quote: newQuote,
+              tags: newTags
+            })
+          })
+          .then(res => res.json())
+          .then(result => {
+            if (result.status === 'success') {
+              alert('✅ 儲存成功！');
+              meme.quote = newQuote;
+              meme.tags = newTags ? newTags.split(',') : [];
+              renderAdminMemesFilter();
+              if (typeof window.loadGallery === 'function') {
+                window.loadGallery();
+              }
+            } else {
+              alert('❌ 儲存失敗：' + result.message);
+              saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存';
+              saveBtn.disabled = false;
+            }
+          })
+          .catch(() => {
+            alert('網路通訊錯誤');
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存';
+            saveBtn.disabled = false;
+          });
+        });
+      });
+    }
 
     // ==========================================================================
     // ✨ 新增：點擊作品錨點自動跳轉功能
     // ==========================================================================
     card.addEventListener('click', (event) => {
-      // 如果點到的是刪除按鈕，不要觸發跳轉
-      if (event.target.closest('button')) return;
+      // 如果點到的是按鈕或輸入框，不要觸發跳轉
+      if (event.target.closest('button') || event.target.closest('input')) return;
 
       if (confirm(`🔍 想要立刻前往前端展覽館查看『${meme.quote || "這件藏品"}』嗎？`)) {
         
@@ -333,4 +435,13 @@ window.deleteMemeFromAdmin = function(targetUrl, event) {
     alert('網路通訊錯誤');
     btn.disabled = false;
   });
+}
+
+function escapeHtml(text) {
+  return (text || '')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
