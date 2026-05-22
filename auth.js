@@ -1,4 +1,3 @@
-// V1穩定版
 // auth.js - 阿公67網 專屬 VIP 會員與權限防護系統
 
 let currentUser = JSON.parse(localStorage.getItem('67net_user')) || { username: '訪客', role: 'guest' };
