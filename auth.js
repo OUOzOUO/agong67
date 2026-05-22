@@ -183,7 +183,7 @@ if (authForm) {
     const payload = {
       action: isRegisterMode ? 'register' : 'login',
       username: username,
-      password: simpleHash(password)
+      password: password
     };
 
     fetch(GAS_API_URL, {
@@ -252,8 +252,8 @@ if (changePwdForm) {
       body: JSON.stringify({
         action: 'changePassword',
         username: currentUser.username,
-        password: simpleHash(oldPwd),
-        newPassword: simpleHash(newPwd),
+        password: oldPwd,
+        newPassword: newPwd,
         token: currentUser.token
       })
     })
