@@ -269,11 +269,15 @@ function renderGallery() {
     // A. 靜態圖片區
     if (currentViewType === 'image') {
       card.classList.add('interactive-card');
+      const fileIdMatch = safeUrl.match(/id=([^&]+)/);
+      const fileId = fileIdMatch ? fileIdMatch[1] : '';
+      const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl;
+      
       card.innerHTML = `
         <img class="card-media" src="${safeUrl}" alt="${safeQuoteHTML}">
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
-        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始照片 / 下載</a>
+        <a href="${downloadUrl}" target="_blank" class="download-btn"><i class="fas fa-download"></i> 點此下載照片</a>
       `;
 
       card.addEventListener('click', async (e) => {
@@ -304,12 +308,13 @@ function renderGallery() {
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
       // 使用 lh3.googleusercontent.com/d/ID 解決大檔案 Google Drive 防毒警告導致的破圖問題，且保持動態 GIF 效果
       const directUrl = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : safeUrl;
+      const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl;
       
       card.innerHTML = `
         <img class="card-media" src="${directUrl}" alt="${safeQuoteHTML}">
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
-        <a href="${directUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始動圖 / 下載</a>
+        <a href="${downloadUrl}" target="_blank" class="download-btn"><i class="fas fa-download"></i> 點此下載動圖</a>
       `;
 
     // C. 影音區
@@ -324,7 +329,7 @@ function renderGallery() {
         </div>
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
-        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-external-link-alt"></i> 點此開啟原始影片 / 下載</a>
+        <a href="${safeUrl}" target="_blank" class="download-btn"><i class="fas fa-download"></i> 點此下載影片</a>
       `;
     }
 
@@ -340,6 +345,94 @@ function renderGallery() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
+
+    // 點擊下載按鈕優化：攔截並在背景透過 Blob 觸發真正的本地下載對話框，解決跨網域直接開新預覽分頁的痛點
+    const downloadBtn = card.querySelector('.download-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', async (event) => {
+        event.preventDefault(); // 阻止開新分頁預覽
+        event.stopPropagation(); // 阻止冒泡至卡片
+        
+        const originalText = downloadBtn.innerHTML;
+        const targetUrl = downloadBtn.getAttribute('href'); // 這會是 https://drive.google.com/uc?export=download&id=FILE_ID 或 safeUrl
+        const fileIdMatch = targetUrl.match(/id=([^&]+)/);
+        const fileId = fileIdMatch ? fileIdMatch[1] : '';
+        
+        // 判斷是否為行動裝置
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // 對於 GIF 與影片，我們不進行 Blob 下載，因為 GIF 容易被轉為靜態圖片且檔案大易超時，影片則無法透過 wsrv.nl fetch。
+        // 我們直接以 Google Drive 的官方下載連結進行下載。
+        if (currentViewType === 'gif' || currentViewType === 'video') {
+          try {
+            const tempLink = document.createElement('a');
+            tempLink.href = targetUrl;
+            if (isMobile) {
+              tempLink.target = '_blank';
+            }
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+          } catch (err) {
+            console.warn("直接導向下載連結失敗，退回新分頁開啟:", err);
+            window.open(targetUrl, '_blank');
+          }
+          return;
+        }
+        
+        // 對於靜態圖片，我們嘗試用 Blob 下載以指定自訂檔名
+        downloadBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 正在準備下載...`;
+        downloadBtn.style.pointerEvents = 'none';
+        
+        try {
+          const safeName = safeQuoteHTML.replace(/[\\\/:*?"<>|]/g, "_");
+          const fileName = `${safeName}.png`;
+          
+          // 使用 wsrv.nl 避開 CORS 限制以進行 fetch 獲取二進位資料。
+          // 為了讓 wsrv.nl 更好處理，如果 fileId 存在，我們使用 thumbnail 網址做為代理源。
+          let proxySourceUrl = targetUrl;
+          if (fileId) {
+            proxySourceUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+          }
+          const downloadUrl = "https://wsrv.nl/?url=" + encodeURIComponent(proxySourceUrl);
+          
+          const response = await fetch(downloadUrl);
+          if (!response.ok) throw new Error("下載檔案失敗");
+          let blob = await response.blob();
+          if (blob.type !== 'image/png') {
+            blob = new Blob([blob], {type: 'image/png'});
+          }
+          
+          // 在同源 origin 下建立虛擬連結以觸發 download 屬性
+          const objectUrl = URL.createObjectURL(blob);
+          const tempLink = document.createElement('a');
+          tempLink.href = objectUrl;
+          tempLink.download = fileName;
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+          console.warn("無法直接透過 Blob 下載，將使用直連方式下載:", err);
+          // Fallback 1: 建立直連下載連結 (不走 Blob)
+          try {
+            const tempLink = document.createElement('a');
+            tempLink.href = targetUrl;
+            if (isMobile) {
+              tempLink.target = '_blank';
+            }
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+          } catch (e) {
+            window.open(targetUrl, '_blank');
+          }
+        } finally {
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.style.pointerEvents = 'auto';
+        }
+      });
+    }
 
     gallery.appendChild(card); 
   });
