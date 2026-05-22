@@ -278,16 +278,20 @@ function renderGallery() {
       card.addEventListener('click', async () => {
         try {
           card.style.opacity = '0.5';
-          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
-          const response = await fetch(proxyUrl);
-          if (!response.ok) throw new Error('阻擋下載');
-          let blob = await response.blob();
-          if (blob.type !== 'image/png') blob = new Blob([blob], {type: 'image/png'});
-          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          // 同步寫入 HTML 圖片標籤與純文字網址，讓社群軟體 (Line, Discord, 手機等) 直接貼上圖片
+          const htmlBlob = new Blob([`<img src="${safeUrl}">`], { type: 'text/html' });
+          const textBlob = new Blob([safeUrl], { type: 'text/plain' });
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': htmlBlob,
+              'text/plain': textBlob
+            })
+          ]);
           alert(`已成功複製照片：${safeQuoteHTML}！\n可以直接貼上了！`);
         } catch (err) {
+          console.warn("直接複製圖片失敗，執行 Fallback 複製網址:", err);
           navigator.clipboard.writeText(safeUrl)
-            .then(() => alert(`圖片本體複製失敗，但已複製「圖片網址」！`))
+            .then(() => alert(`圖片已複製為「圖片網址」！`))
             .catch(e => console.error(e));
         } finally {
           card.style.opacity = '1';
@@ -299,7 +303,8 @@ function renderGallery() {
       card.classList.add('interactive-card');
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
-      const directUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl;
+      // 使用 lh3.googleusercontent.com/d/ID 解決大檔案 Google Drive 防毒警告導致的破圖問題，且保持動態 GIF 效果
+      const directUrl = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : safeUrl;
       
       card.innerHTML = `
         <img class="card-media" src="${directUrl}" alt="${safeQuoteHTML}">
@@ -310,17 +315,20 @@ function renderGallery() {
       card.addEventListener('click', async () => {
         try {
           card.style.opacity = '0.5';
-          const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(directUrl);
-          const response = await fetch(proxyUrl);
-          if (!response.ok) throw new Error('下載動圖失敗');
-          let blob = await response.blob();
-          if (blob.type !== 'image/gif') blob = new Blob([blob], {type: 'image/gif'});
-          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          // 同步寫入 HTML 圖片標籤與純文字網址，讓社群軟體 (Line, Discord, 手機等) 直接貼上動圖
+          const htmlBlob = new Blob([`<img src="${directUrl}">`], { type: 'text/html' });
+          const textBlob = new Blob([directUrl], { type: 'text/plain' });
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': htmlBlob,
+              'text/plain': textBlob
+            })
+          ]);
           alert(`已成功複製動圖：${safeQuoteHTML}！\n可以直接貼上了！`);
         } catch (err) {
           console.warn("直接複製 GIF 失敗，執行 Fallback 複製網址:", err);
           navigator.clipboard.writeText(directUrl)
-            .then(() => alert(`因行動裝置或瀏覽器限制，無法直接複製動圖檔案，但已複製「動圖直連網址」！\n直接貼上即可在社群軟體顯示動圖！`))
+            .then(() => alert(`已複製動圖直連網址！\n在社群軟體貼上即可自動顯示動圖。`))
             .catch(e => {
               console.error(e);
               alert("複製失敗，請長按圖片進行複製或下載！");
