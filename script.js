@@ -316,15 +316,11 @@ function renderGallery() {
     } else if (currentViewType === 'video') {
       const fileIdMatch = safeUrl.match(/id=([^&]+)/);
       const fileId = fileIdMatch ? fileIdMatch[1] : '';
-      // 使用 Google Drive 的直連下載串流連結，讓 HTML5 原生 video 播放，完全免去 Google 網頁播放器在手機上的控制項遮擋問題
-      const videoDirectUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : safeUrl;
+      const iframeUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : safeUrl;
       
       card.innerHTML = `
         <div class="media-wrapper video-wrapper">
-          <video class="card-media" controls preload="metadata" playsinline style="background:#000;">
-            <source src="${videoDirectUrl}" type="video/mp4">
-            您的瀏覽器不支持播放此影片。
-          </video>
+          <iframe class="card-media video-iframe" src="${iframeUrl}" allow="autoplay" allowfullscreen style="border:none; background:#000;"></iframe>
         </div>
         <p class="card-title">${safeQuoteHTML}</p>
         ${tagsHTML}
