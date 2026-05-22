@@ -1,4 +1,3 @@
-// V1穩定版
 // admin.js - 大總管審核後台（包含二級分流、獨立搜尋、跨視圖錨點跳轉）
 
 const adminNavBtnReal = document.getElementById('adminNavBtn');
