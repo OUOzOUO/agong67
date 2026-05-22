@@ -1,3 +1,4 @@
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx4A80FX5kCIwzpRgf2_tJHo4mijo1lHZ17kNxsEh3BJPCyN_itG6rKssY-OQoh6A8u/exec";
 // auth.js - 阿公67網 專屬 VIP 會員與權限防護系統
 
 let currentUser = JSON.parse(localStorage.getItem('67net_user')) || { username: '訪客', role: 'guest' };
@@ -177,7 +178,7 @@ if (authForm) {
     const payload = {
       action: isRegisterMode ? 'register' : 'login',
       username: username,
-      password: simpleHash(password)
+      password: password
     };
 
     fetch(GAS_API_URL, {
@@ -192,7 +193,7 @@ if (authForm) {
           switchMode(false); 
         } else {
           alert(`歡迎回來，${username}！`);
-          currentUser = { username: username, role: result.role };
+          currentUser = { username: username, role: result.role, token: result.token };
           localStorage.setItem('67net_user', JSON.stringify(currentUser));
           updateAuthUI();
           window.closeAuthModal();
@@ -246,8 +247,9 @@ if (changePwdForm) {
       body: JSON.stringify({
         action: 'changePassword',
         username: currentUser.username,
-        password: simpleHash(oldPwd),
-        newPassword: simpleHash(newPwd)
+        password: oldPwd,
+        newPassword: newPwd,
+        token: currentUser.token
       })
     })
     .then(res => res.json())

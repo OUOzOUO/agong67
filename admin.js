@@ -59,7 +59,11 @@ function loadAdminUsers() {
   
   fetch(GAS_API_URL, {
     method: 'POST',
-    body: JSON.stringify({ action: 'getUsers' })
+    body: JSON.stringify({
+      action: 'getUsers',
+      operator: currentUser.username,
+      token: currentUser.token
+    })
   })
   .then(res => res.json())
   .then(result => {
@@ -116,7 +120,13 @@ window.updateUserRole = function(targetUser, newRole, event) {
 
   fetch(GAS_API_URL, {
     method: 'POST',
-    body: JSON.stringify({ action: 'updateRole', targetUser: targetUser, newRole: newRole })
+    body: JSON.stringify({
+      action: 'updateRole',
+      targetUser: targetUser,
+      newRole: newRole,
+      operator: currentUser.username,
+      token: currentUser.token
+    })
   })
   .then(res => res.json())
   .then(result => {
@@ -303,6 +313,7 @@ window.deleteMemeFromAdmin = function(targetUrl, event) {
     body: JSON.stringify({
       action: 'deleteMeme',
       operator: currentUser.username, 
+      token: currentUser.token,
       targetUrl: targetUrl          
     })
   })
