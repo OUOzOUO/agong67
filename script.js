@@ -372,7 +372,10 @@ if (uploadButton) {
         const lastDotIndex = originalName.lastIndexOf('.');
         const extension = lastDotIndex !== -1 ? originalName.slice(lastDotIndex) : '';
         const customName = item.quote.trim();
-        const targetFileName = customName ? (customName + extension) : originalName;
+        let targetFileName = customName ? (customName + extension) : originalName;
+        if (!targetFileName.startsWith("ag67_")) {
+          targetFileName = "ag67_" + targetFileName;
+        }
 
         const payload = {
           action: 'upload', 
@@ -454,7 +457,14 @@ window.loadGallery = function() {
       try {
         const data = JSON.parse(text);
         if (!Array.isArray(data)) throw new Error("資料庫回傳格式異常");
-        allMemes = data.reverse(); 
+        allMemes = data.sort((a, b) => {
+          const orderA = a.order || 0;
+          const orderB = b.order || 0;
+          if (orderB !== orderA) {
+            return orderB - orderA; // 顯示順序權重越大越靠前
+          }
+          return b.originalIndex - a.originalIndex; // 預設依新舊順序顯示（最新上傳在最上方）
+        });
         renderGallery(); 
       } catch (e) {
         console.error('解析崩潰:', e);
@@ -673,17 +683,12 @@ function renderSingleGalleryCard(card, meme) {
             }
           }
         } else {
-          // iOS 一般 Safari 網頁版：全部跳出提示視窗並在新分頁下載
-          let typeText = '檔案';
-          if (meme.type === 'video') {
-            typeText = '影片';
-          } else if (meme.type === 'gif') {
-            typeText = '動圖';
+          // iOS 一般 Safari 網頁版：如果是雲端下載連結，直接在當前分頁觸發，避免開新分頁導致背景網頁被系統重新整理
+          if (targetUrl.includes('drive.usercontent.google.com') || targetUrl.includes('export=download')) {
+            window.location.href = targetUrl;
           } else {
-            typeText = '照片';
+            window.open(targetUrl, '_blank');
           }
-          alert(`🎬 ${typeText}將下載至您的「檔案」App 中，請於新分頁開啟後點擊下載。`);
-          window.open(targetUrl, '_blank');
         }
         return;
       }
@@ -1302,4 +1307,16 @@ if (refreshDrawerBtn) {
     }, 500);
   });
 }
+
+// ==========================================================================
+// 偵測 iOS 並顯示右上角捷徑按鈕
+// ==========================================================================
+function initIosShortcutButton() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const iosShortcutBtn = document.getElementById('iosShortcutBtn');
+  if (isIOS && iosShortcutBtn) {
+    iosShortcutBtn.style.display = 'flex';
+  }
+}
+initIosShortcutButton();
 

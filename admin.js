@@ -193,8 +193,15 @@ function loadAdminMemes() {
   fetch(GAS_API_URL)
     .then(res => res.json())
     .then(data => {
-      adminLoadedMemes = data; // 快取全站原始資料
-      renderAdminMemesFilter(); // 渲染篩選後的結果
+      adminLoadedMemes = data.sort((a, b) => {
+        const orderA = a.order || 0;
+        const orderB = b.order || 0;
+        if (orderB !== orderA) {
+          return orderB - orderA; // 顯示順序權重越大越靠前
+        }
+        return b.originalIndex - a.originalIndex; // 預設依新舊順序顯示（最新上傳在最上方）
+      });
+      renderAdminMemesFilter();
     })
     .catch(() => {
       if (adminMemeCardsContainer) adminMemeCardsContainer.innerHTML = '<p style="color:red; text-align:center;">調閱清單失敗</p>';
@@ -212,12 +219,7 @@ function renderAdminMemesFilter() {
   const filtered = adminLoadedMemes.filter(meme => {
     const itemType = meme.type || 'image';
     if (itemType !== adminCurrentType) return false;
-
-    if (!keyword) return true;
-    const matchQuote = meme.quote && meme.quote.toLowerCase().includes(keyword);
-    const matchUploader = meme.uploader && meme.uploader.toLowerCase().includes(keyword);
-    const matchTags = meme.tags ? meme.tags.some(tag => tag.toLowerCase().includes(keyword)) : false;
-    return matchQuote || matchUploader || matchTags;
+    return window.matchMemeQuery(meme, keyword, true);
   });
 
   if (filtered.length === 0) {
@@ -301,7 +303,10 @@ function renderSingleMemeCard(card, meme) {
       ${previewHTML}
       <div style="flex:1; min-width:0;">
         <h4 style="margin:0; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(meme.quote || "未命名藏品")}</h4>
-        <p style="margin:2px 0 0 0; font-size:0.8rem; color:#7f8c8d;"><i class="fas fa-user-edit"></i> 貢獻者：<strong style="color:var(--main-color);">${uploaderName}</strong></p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:2px;">
+          <p style="margin:0; font-size:0.8rem; color:#7f8c8d;"><i class="fas fa-user-edit"></i> 貢獻者：<strong style="color:var(--main-color);">${uploaderName}</strong></p>
+          <p style="margin:0; font-size:0.8rem; color:#7f8c8d;"><i class="fas fa-sort-amount-down"></i> 權重：<strong style="color:var(--accent-color);">${meme.order || 0}</strong></p>
+        </div>
       </div>
     </div>
     <div class="meme-actions" style="display:flex; gap:8px;">
@@ -353,6 +358,10 @@ function enterEditMode(card, meme) {
           <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">搜尋關鍵字 (多個以逗號或空白分隔)</label>
           <input type="text" class="edit-tags-input" value="${escapeHtml(tagsString)}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
         </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.85rem; font-weight: bold; color: var(--main-color); text-align: left;">顯示權重 (權重越大越靠前，預設為 0，可輸入負數)</label>
+          <input type="number" class="edit-order-input" value="${meme.order || 0}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;">
+        </div>
       </div>
       <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
         <button class="action-btn cancel-edit-btn" style="background:#95a5a6; padding: 6px 12px; margin:0; font-size:0.85rem;"><i class="fas fa-times"></i> 取消</button>
@@ -374,6 +383,7 @@ function enterEditMode(card, meme) {
     const newQuote = card.querySelector('.edit-quote-input').value.trim();
     const rawTags = card.querySelector('.edit-tags-input').value.trim();
     const newTags = rawTags.replace(/[，、\s]+/g, ',').replace(/^,+|,+$/g, '');
+    const newOrder = parseInt(card.querySelector('.edit-order-input').value.trim()) || 0;
 
     if (!newQuote) {
       alert('檔案名稱不能為空！');
@@ -392,7 +402,8 @@ function enterEditMode(card, meme) {
         token: currentUser.token,
         targetUrl: meme.url,
         quote: newQuote,
-        tags: newTags
+        tags: newTags,
+        order: newOrder
       })
     })
     .then(res => res.json())
@@ -401,9 +412,21 @@ function enterEditMode(card, meme) {
         alert('✅ 儲存成功！');
         meme.quote = newQuote;
         meme.tags = newTags ? newTags.split(',') : [];
-        renderSingleMemeCard(card, meme); // 僅還原此張卡片為唯讀狀態
+        meme.order = newOrder; // 更新本地端快取資料中的權重
+        
+        // 重新對大總管快取中的資料進行排序，確保即時更新排序效果
+        adminLoadedMemes = adminLoadedMemes.sort((a, b) => {
+          const orderA = a.order || 0;
+          const orderB = b.order || 0;
+          if (orderB !== orderA) {
+            return orderB - orderA;
+          }
+          return b.originalIndex - a.originalIndex;
+        });
+
+        renderSingleMemeCard(card, meme); // 還原為唯讀狀態
         if (typeof window.loadGallery === 'function') {
-          window.loadGallery();
+          window.loadGallery(); // 同步重載首頁藝廊的資料
         }
       } else {
         alert('❌ 儲存失敗：' + result.message);
