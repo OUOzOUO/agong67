@@ -77,7 +77,11 @@ navBtns.forEach(btn => {
     if (targetId === 'galleryView' && targetType) {
       currentViewType = targetType;
       localStorage.setItem('agong67_last_view', targetType);
-      if (galleryTitle) galleryTitle.innerHTML = btn.innerHTML; 
+      if (galleryTitle) {
+        if (targetType === 'image') galleryTitle.innerHTML = '<i class="fas fa-image"></i> 靜態圖片區';
+        else if (targetType === 'gif') galleryTitle.innerHTML = '<i class="fas fa-bolt"></i> 動態 GIF 區';
+        else if (targetType === 'video') galleryTitle.innerHTML = '<i class="fas fa-video"></i> 短影片專區';
+      }
       if (searchInput) searchInput.value = ''; 
       renderGallery(); 
     }
@@ -459,8 +463,101 @@ function getMediaHTML(meme) {
   }
 }
 
+// ==========================================================================
+// 剪貼簿複製核心邏輯 (支援跨平台、Secure/Insecure 上下文、與 User Activation 防禦)
+// ==========================================================================
+
+// 輔助函式：複製文字到剪貼簿 (相容 HTTP 模式之 execCommand 備份方案)
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) resolve();
+      else reject(new Error('execCommand copy returned false'));
+    } catch (err) {
+      document.body.removeChild(textArea);
+      reject(err);
+    }
+  });
+}
+
+// 核心函式：複製圖片 (Blob) 或退回文字網址 (Fallback)
+async function copyImageToClipboard(imageUrl, title, feedbackElement, isRandom = false) {
+  const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(imageUrl) + "&output=png";
+  const fallbackUrl = "https://wsrv.nl/?url=" + encodeURIComponent(imageUrl);
+  
+  if (feedbackElement) feedbackElement.style.opacity = '0.5';
+
+  // 檢查是否支援完整的非同步剪貼簿寫入且為安全上下文 (HTTPS/localhost)
+  const isSecureContext = window.isSecureContext || (navigator.clipboard && window.ClipboardItem);
+
+  if (!isSecureContext) {
+    // 處於 HTTP 非安全上下文：直接採用純文字複製備用方案
+    try {
+      await copyTextToClipboard(fallbackUrl);
+      if (isRandom) {
+        alert("已隨機複製了一張照片！");
+      } else {
+        alert(`已成功複製照片：\n${title}`);
+      }
+    } catch (err) {
+      console.error("複製失敗:", err);
+      alert("複製失敗，請長按圖片進行儲存或分享。");
+    } finally {
+      if (feedbackElement) feedbackElement.style.opacity = '1';
+    }
+    return;
+  }
+
+  try {
+    // 為了防止瀏覽器在非同步 fetch 時遺失 User Gesture Activation 權限，
+    // 我們必須「同步」建立 ClipboardItem 並將 fetch 的 Promise 丟進去。
+    const clipboardItem = new ClipboardItem({
+      'image/png': fetch(proxyUrl).then(res => {
+        if (!res.ok) throw new Error('無法取得圖片');
+        return res.blob();
+      })
+    });
+
+    await navigator.clipboard.write([clipboardItem]);
+    if (isRandom) {
+      alert("已隨機複製了一張照片！\n可以直接貼上了！");
+    } else {
+      alert(`已成功複製照片：${title}\n可以直接貼上了！`);
+    }
+  } catch (err) {
+    console.warn("直接複製圖片 Blob 失敗，嘗試複製網址Fallback:", err);
+    try {
+      await copyTextToClipboard(fallbackUrl);
+      if (isRandom) {
+        alert("已隨機複製了一張照片！");
+      } else {
+        alert("圖片已複製為「圖片網址」！");
+      }
+    } catch (fallbackErr) {
+      console.error("Fallback 複製也失敗:", fallbackErr);
+      alert("複製失敗，請長按圖片進行儲存或分享. ");
+    }
+  } finally {
+    if (feedbackElement) feedbackElement.style.opacity = '1';
+  }
+}
+
 function renderSingleGalleryCard(card, meme) {
-  if (meme.type === 'image' || (!meme.type && currentViewType === 'image')) {
+  if (meme.type === 'image' || !meme.type) {
     card.classList.add('interactive-card');
   } else {
     card.classList.remove('interactive-card');
@@ -522,8 +619,9 @@ function renderSingleGalleryCard(card, meme) {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       if (isIOS) {
-        if (meme.type === 'video') {
-          if (isStandalone) {
+        if (isStandalone) {
+          // iOS PWA 主畫面版：保持原樣
+          if (meme.type === 'video') {
             // iOS PWA 模式下載影片 -> 複製連結
             try {
               await navigator.clipboard.writeText(targetUrl);
@@ -533,21 +631,29 @@ function renderSingleGalleryCard(card, meme) {
               alert(`由於 iOS 限制，請長按複製此下載連結：\n${targetUrl}`);
             }
           } else {
-            // iOS 一般 Safari 瀏覽器下載影片 -> 提示並在新分頁開啟
-            alert("🎬 影片將下載至您的「檔案」App 中，請於新分頁開啟後點擊下載。");
-            window.open(targetUrl, '_blank');
+            // iOS PWA 模式下載圖片與 GIF -> 彈出 iOS 專屬長按儲存引導 Modal
+            const iosModal = document.getElementById('iosDownloadModal');
+            const iosOverlay = document.getElementById('iosDownloadOverlay');
+            const iosContent = document.getElementById('iosDownloadContentContainer');
+            if (iosModal && iosOverlay && iosContent) {
+              const previewImgUrl = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : safeUrl;
+              iosContent.innerHTML = `<img src="${previewImgUrl}" style="max-width: 100%; max-height: 50vh; object-fit: contain; display: block;">`;
+              iosOverlay.classList.add('active');
+              iosModal.classList.add('active');
+            }
           }
         } else {
-          // iOS 圖片與 GIF -> 彈出 iOS 專屬長按儲存引導 Modal
-          const iosModal = document.getElementById('iosDownloadModal');
-          const iosOverlay = document.getElementById('iosDownloadOverlay');
-          const iosContent = document.getElementById('iosDownloadContentContainer');
-          if (iosModal && iosOverlay && iosContent) {
-            const previewImgUrl = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : safeUrl;
-            iosContent.innerHTML = `<img src="${previewImgUrl}" style="max-width: 100%; max-height: 50vh; object-fit: contain; display: block;">`;
-            iosOverlay.classList.add('active');
-            iosModal.classList.add('active');
+          // iOS 一般 Safari 網頁版：全部跳出提示視窗並在新分頁下載
+          let typeText = '檔案';
+          if (meme.type === 'video') {
+            typeText = '影片';
+          } else if (meme.type === 'gif') {
+            typeText = '動圖';
+          } else {
+            typeText = '照片';
           }
+          alert(`🎬 ${typeText}將下載至您的「檔案」App 中，請於新分頁開啟後點擊下載。`);
+          window.open(targetUrl, '_blank');
         }
         return;
       }
@@ -723,9 +829,9 @@ function renderGallery() {
   }
 
   if (galleryTitle) {
-    if (currentViewType === 'image') galleryTitle.innerHTML = '<i class="fas fa-image"></i> 🖼️ 靜態圖片區';
-    else if (currentViewType === 'gif') galleryTitle.innerHTML = '<i class="fas fa-bolt"></i> ⚡ 動態 GIF 區';
-    else if (currentViewType === 'video') galleryTitle.innerHTML = '<i class="fas fa-video"></i> 🎬 短影片專區';
+    if (currentViewType === 'image') galleryTitle.innerHTML = '<i class="fas fa-image"></i> 靜態圖片區';
+    else if (currentViewType === 'gif') galleryTitle.innerHTML = '<i class="fas fa-bolt"></i> 動態 GIF 區';
+    else if (currentViewType === 'video') galleryTitle.innerHTML = '<i class="fas fa-video"></i> 短影片專區';
   }
 
   const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -758,55 +864,12 @@ function renderGallery() {
 
     // 靜態圖片複製邏輯 (若點選非下載/編輯區域)
     card.addEventListener('click', async (e) => {
-      if (currentViewType !== 'image') return;
+      const isImage = meme.type === 'image' || !meme.type;
+      if (!isImage) return;
       if (e.target.closest('.download-btn') || e.target.closest('.gallery-edit-btn') || e.target.closest('.edit-form-container')) return;
       
-      const safeQuoteHTML = escapeHtml(meme.quote || '未命名藏品');
-      const safeUrl = String(meme.url || '');
-      
-      try {
-        card.style.opacity = '0.5';
-        if (!navigator.clipboard || !window.ClipboardItem) {
-          throw new Error('瀏覽器不支援 Clipboard API');
-        }
-        
-        const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl) + "&output=png";
-        const isIOSorSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                              /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-        if (isIOSorSafari) {
-          const clipboardPromise = fetch(proxyUrl)
-            .then(res => {
-              if (!res.ok) throw new Error('無法取得圖片');
-              return res.blob();
-            });
-
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              'image/png': clipboardPromise
-            })
-          ]);
-          alert(`已成功複製照片：${safeQuoteHTML}\n可以直接貼上了！`);
-        } else {
-          const response = await fetch(proxyUrl);
-          if (!response.ok) throw new Error('無法取得圖片');
-          const blob = await response.blob();
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              'image/png': blob
-            })
-          ]);
-          alert(`已成功複製照片：${safeQuoteHTML}\n可以直接貼上了！`);
-        }
-      } catch (err) {
-        console.warn("Blob 複製失敗，退回複製代理網址:", err);
-        const fallbackUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
-        navigator.clipboard.writeText(fallbackUrl)
-          .then(() => alert(`圖片已複製為「圖片網址」！\n在 LINE、Messenger 貼上送出後會自動展開成圖片哦！`))
-          .catch(e => console.error(e));
-      } finally {
-        card.style.opacity = '1';
-      }
+      const title = meme.quote || '未命名藏品';
+      await copyImageToClipboard(meme.url, title, card);
     });
 
     gallery.appendChild(card); 
@@ -847,53 +910,11 @@ if (randomCopyBtn) {
     }
     
     const randomMeme = imageMemes[Math.floor(Math.random() * imageMemes.length)];
-    const safeUrl = String(randomMeme.url || '');
+    const title = randomMeme.quote || '隨機照片';
     
-    try {
-      randomCopyBtn.style.opacity = '0.5';
-      randomCopyBtn.disabled = true;
-      if (!navigator.clipboard || !window.ClipboardItem) {
-        throw new Error('瀏覽器不支援 Clipboard API');
-      }
-
-      const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl) + "&output=png";
-      const isIOSorSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                            /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-      if (isIOSorSafari) {
-        const clipboardPromise = fetch(proxyUrl)
-          .then(res => {
-            if (!res.ok) throw new Error('無法取得圖片');
-            return res.blob();
-          });
-
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'image/png': clipboardPromise
-          })
-        ]);
-        alert(`已隨機複製了一張照片！\n可以直接貼上了！`);
-      } else {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('無法取得圖片');
-        const blob = await response.blob();
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'image/png': blob
-          })
-        ]);
-        alert(`已隨機複製了一張照片！\n可以直接貼上了哦！`);
-      }
-    } catch (err) {
-      console.warn("隨機 Blob 複製失敗，退回複製代理網址:", err);
-      const fallbackUrl = "https://wsrv.nl/?url=" + encodeURIComponent(safeUrl);
-      navigator.clipboard.writeText(fallbackUrl)
-        .then(() => alert(`已隨機複製了一張照片網址！\n在 LINE、Messenger 貼上送出後會自動展開成圖片哦！`))
-        .catch(e => console.error(e));
-    } finally {
-      randomCopyBtn.style.opacity = '1';
-      randomCopyBtn.disabled = false;
-    }
+    randomCopyBtn.disabled = true;
+    await copyImageToClipboard(randomMeme.url, title, randomCopyBtn, true);
+    randomCopyBtn.disabled = false;
   });
 }
 
@@ -1213,7 +1234,11 @@ function initViewHighlight() {
     // 2. 為記住的展區按鈕加上高亮
     targetBtn.classList.add('active');
     // 3. 同步首頁的大標題文字
-    if (galleryTitle) galleryTitle.innerHTML = targetBtn.innerHTML;
+    if (galleryTitle) {
+      if (currentViewType === 'image') galleryTitle.innerHTML = '<i class="fas fa-image"></i> 靜態圖片區';
+      else if (currentViewType === 'gif') galleryTitle.innerHTML = '<i class="fas fa-bolt"></i> 動態 GIF 區';
+      else if (currentViewType === 'video') galleryTitle.innerHTML = '<i class="fas fa-video"></i> 短影片專區';
+    }
   }
 }
 
