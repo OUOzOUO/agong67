@@ -477,7 +477,7 @@ function renderSingleGalleryCard(card, meme) {
 
   const fileIdMatch = safeUrl.match(/id=([^&]+)/);
   const fileId = fileIdMatch ? fileIdMatch[1] : '';
-  const downloadUrl = fileId ? `https://drive.usercontent.com/download?id=${fileId}&export=download&confirm=t` : safeUrl;
+  const downloadUrl = fileId ? `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t` : safeUrl;
 
   const mediaHTML = getMediaHTML(meme);
 

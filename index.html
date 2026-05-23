@@ -20,7 +20,7 @@
   <meta name="apple-mobile-web-app-title" content="阿公67網">
   <meta name="theme-color" content="#1a5e63">
 
-  <link rel="stylesheet" href="style.css?v=68.01">
+  <link rel="stylesheet" href="style.css?v=68.04">
 </head>
 <body>
 
@@ -261,8 +261,23 @@
     </div>
   </div>
 
-  <script src="auth.js?v=67.23"></script>
-  <script src="admin.js?v=67.23"></script>
-  <script src="script.js?v=67.23"></script>
+  <!-- iOS 專用儲存導引 Modal -->
+  <div id="iosDownloadOverlay" class="auth-overlay"></div>
+  <div id="iosDownloadModal" class="auth-modal" style="max-width: 500px; width: 90%; padding: 25px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; margin-bottom: 15px;">
+      <h2 style="margin: 0; font-size: 1.4rem; color: var(--accent-color);"><i class="fas fa-arrow-circle-down"></i> iOS 儲存指引</h2>
+      <span id="closeIosDownloadBtn" style="cursor: pointer; font-size: 1.5rem; color: #95a5a6; transition: color 0.2s;"><i class="fas fa-times"></i></span>
+    </div>
+    <div style="margin-bottom: 15px; color: #f39c12; font-weight: bold; font-size: 0.95rem; text-align: center; line-height: 1.4;">
+      💡 iOS 系統限制：請「長按」下方檔案，並選擇「儲存至相片」即可存入手機相簿喔！
+    </div>
+    <div id="iosDownloadContentContainer" style="display: flex; justify-content: center; align-items: center; max-height: 50vh; overflow: auto; background: #000; border-radius: 8px;">
+      <!-- JS 動態插入圖片 -->
+    </div>
+  </div>
+
+  <script src="auth.js?v=67.22"></script>
+  <script src="admin.js?v=68.22"></script>
+  <script src="script.js?v=68.22"></script>
 </body>
 </html>
