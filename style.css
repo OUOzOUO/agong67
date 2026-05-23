@@ -217,6 +217,29 @@ header {
   transform: rotate(180deg);
 }
 
+.refresh-drawer-btn {
+  position: absolute;
+  top: 25px;
+  right: 70px; /* 緊貼在關閉按鈕左邊 */
+  font-size: 20px;
+  color: #95a5a6;
+  cursor: pointer;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-base);
+}
+
+.refresh-drawer-btn:hover {
+  color: var(--main-color);
+  background-color: rgba(26, 94, 99, 0.08);
+  transform: rotate(180deg);
+}
+
+
 /* 側邊導覽按鈕選單 */
 .drawer-nav {
   display: flex;

@@ -31,6 +31,36 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// 核心搜尋過濾引擎：支援空格（AND）與分號（OR）多項組合搜尋
+window.matchMemeQuery = function(meme, query, includeUploader = false) {
+  if (!query) return true;
+  
+  // 統一將全形分號「；」取代為半形分號「;」並分割成多個 OR 條件
+  const clauses = query.replace(/；/g, ';').split(';');
+  
+  // 只要符合任何一個 OR 條件子句，即視為匹配
+  return clauses.some(clause => {
+    const trimmedClause = clause.trim();
+    if (!trimmedClause) return false;
+    
+    // 將子句依空白（半形、全形、多重空白）分割成多個 AND 關鍵字
+    const terms = trimmedClause.split(/[\s　]+/).filter(Boolean);
+    if (terms.length === 0) return false;
+    
+    const safeQuote = String(meme.quote || '').toLowerCase();
+    const safeUploader = String(meme.uploader || '').toLowerCase();
+    const tagsArray = Array.isArray(meme.tags) ? meme.tags.map(t => String(t || '').toLowerCase()) : [];
+
+    // 必須同時符合該子句裡面的「所有」關鍵字 (AND)
+    return terms.every(term => {
+      const matchQuote = safeQuote.includes(term);
+      const matchTags = tagsArray.some(tag => tag.includes(term));
+      const matchUploader = includeUploader && safeUploader.includes(term);
+      return matchQuote || matchTags || matchUploader;
+    });
+  });
+};
+
 // ==========================================================================
 // SPA 視圖切換與側邊欄控制邏輯
 // ==========================================================================
@@ -839,15 +869,7 @@ function renderGallery() {
   const filteredMemes = allMemes.filter(meme => {
     const itemType = meme.type || 'image';
     if (itemType !== currentViewType) return false;
-    if (!keyword) return true;
-    
-    const safeQuote = String(meme.quote || '').toLowerCase();
-    const matchQuote = safeQuote.includes(keyword);
-    
-    const matchTags = Array.isArray(meme.tags) ? 
-      meme.tags.some(tag => String(tag).toLowerCase().includes(keyword)) : false;
-      
-    return matchQuote || matchTags;
+    return window.matchMemeQuery(meme, keyword);
   });
 
   if (filteredMemes.length === 0) {
@@ -998,11 +1020,7 @@ function renderUploaderMemesFilter() {
   const filtered = uploaderLoadedMemes.filter(meme => {
     const itemType = meme.type || 'image';
     if (itemType !== uploaderCurrentType) return false;
-
-    if (!keyword) return true;
-    const matchQuote = meme.quote && meme.quote.toLowerCase().includes(keyword);
-    const matchTags = meme.tags ? meme.tags.some(tag => tag.toLowerCase().includes(keyword)) : false;
-    return matchQuote || matchTags;
+    return window.matchMemeQuery(meme, keyword);
   });
 
   if (filtered.length === 0) {
@@ -1270,3 +1288,18 @@ if (closeIosDownloadBtn) {
 if (iosDownloadOverlay) {
   iosDownloadOverlay.addEventListener('click', window.closeIosDownloadModal);
 }
+
+// ==========================================================================
+// 側邊欄重新整理按鈕事件監聽
+// ==========================================================================
+const refreshDrawerBtn = document.getElementById('refreshDrawerBtn');
+if (refreshDrawerBtn) {
+  refreshDrawerBtn.addEventListener('click', () => {
+    const icon = refreshDrawerBtn.querySelector('i');
+    if (icon) icon.classList.add('fa-spin');
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  });
+}
+

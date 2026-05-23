@@ -20,7 +20,7 @@
   <meta name="apple-mobile-web-app-title" content="阿公67網">
   <meta name="theme-color" content="#1a5e63">
 
-  <link rel="stylesheet" href="style.css?v=67.24">
+  <link rel="stylesheet" href="style.css?v=67.27">
 </head>
 <body>
 
@@ -29,6 +29,9 @@
   </div>
 
   <div id="navDrawer" class="drawer">
+    <div id="refreshDrawerBtn" class="refresh-drawer-btn" title="重新整理網頁">
+      <i class="fas fa-sync-alt"></i>
+    </div>
     <div id="closeDrawer" class="close-drawer">
       <i class="fas fa-times"></i>
     </div>
@@ -85,6 +88,9 @@
             <input type="text" id="searchInput" placeholder="在當前區域搜尋照片/標籤...">
             <i class="fas fa-times-circle search-clear-icon" id="searchClearBtn" title="清空搜尋"></i>
           </div>
+          <p class="search-hint" style="margin: 10px 0 0 0; font-size: 0.85rem; color: #95a5a6; font-weight: 500; letter-spacing: 0.5px;">
+            💡 可用「空白」進行 (AND) ，或用「分號 」進行 (OR) 精準搜尋
+          </p>
         </div>
       </header>
       
@@ -276,8 +282,8 @@
     </div>
   </div>
 
-  <script src="auth.js?v=67.24"></script>
-  <script src="admin.js?v=68.24"></script>
-  <script src="script.js?v=68.24"></script>
+  <script src="auth.js?v=67.27"></script>
+  <script src="admin.js?v=68.27"></script>
+  <script src="script.js?v=68.27"></script>
 </body>
 </html>
