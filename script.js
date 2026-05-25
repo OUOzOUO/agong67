@@ -319,7 +319,7 @@ if (imageInput) {
         badgeClass = 'file-type-badge badge-video';
       }
 
-      if (file.size > maxSizeMB * 1024 * 1024) {
+      if (!isUserAdmin && file.size > maxSizeMB * 1024 * 1024) {
         alert(`檔案「${file.name}」太大了！此類型檔案（${uploadType === 'image' ? '靜態圖片' : '影片/動圖'}）最大限制為 ${maxSizeMB}MB！`);
         continue;
       }
