@@ -292,8 +292,10 @@ if (imageInput) {
       return;
     }
 
-    if (selectedFiles.length + files.length > 5) {
-      alert('最多只能同時選擇 5 個檔案！');
+    const isUserAdmin = typeof isAdmin === 'function' && isAdmin();
+    const maxFiles = isUserAdmin ? Infinity : 5;
+    if (selectedFiles.length + files.length > maxFiles) {
+      alert(`最多只能同時選擇 ${maxFiles} 個檔案！`);
       imageInput.value = '';
       return;
     }

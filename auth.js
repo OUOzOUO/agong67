@@ -107,6 +107,16 @@ function updateAuthUI() {
       uploaderManageNavBtn.style.display = (currentUser.role === 'member') ? 'flex' : 'none';
     }
   }
+
+  // 動態更新上傳檔案按鈕顯示的限制文字 (超級大總管解鎖限制)
+  const fileUploadLabel = document.getElementById('fileUploadLabel');
+  if (fileUploadLabel) {
+    if (isAdmin()) {
+      fileUploadLabel.innerHTML = `<i class="fas fa-folder-open fa-2x"></i> <br>點擊選擇檔案 (超級大總管無限上傳)`;
+    } else {
+      fileUploadLabel.innerHTML = `<i class="fas fa-folder-open fa-2x"></i> <br>點擊選擇檔案 (最多 5 個)`;
+    }
+  }
 }
 
 function openAuthModal() {
