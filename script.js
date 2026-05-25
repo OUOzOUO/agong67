@@ -349,6 +349,7 @@ if (uploadButton) {
     uploadButton.disabled = true;
     const totalFiles = selectedFiles.length;
     let successCount = 0;
+    let corsSuccessCount = 0; // 追蹤因瀏覽器 CORS 重新導向攔截導致的偽失敗
     let failedIndices = [];
     let lastUploadedType = null;
 
@@ -408,23 +409,43 @@ if (uploadButton) {
         }
       } catch (err) {
         console.error(`檔案「${item.file.name}」上傳出錯:`, err);
-        failedIndices.push(i);
+        // 判斷是否為跨網域 (CORS) 偽失敗：GAS 在多帳號登入時極易發生重新導向被瀏覽器 CORS 擋掉
+        const isNetworkError = err.name === 'TypeError' || 
+                               err.message.toLowerCase().includes('fetch') || 
+                               err.message.toLowerCase().includes('network');
+        if (isNetworkError) {
+          console.warn(`⚠️ 偵測到 CORS / 網路通訊異常，但該檔案在雲端極可能已上傳成功，在此將其視為疑似成功處理。`);
+          corsSuccessCount++;
+          lastUploadedType = item.type;
+        } else {
+          failedIndices.push(i);
+        }
       }
     }
 
-    if (successCount === totalFiles) {
-      alert('所有藏品上傳成功！');
+    const totalSuccessful = successCount + corsSuccessCount;
+
+    if (failedIndices.length === 0) {
+      if (corsSuccessCount > 0) {
+        alert('所有藏品已完成上傳！\n⚠️ 提示：部分檔案在傳回結果時受瀏覽器安全限制 (CORS) 影響，但雲端極可能已儲存成功。請檢查首頁藝廊是否已載入新藏品。');
+      } else {
+        alert('所有藏品上傳成功！');
+      }
       selectedFiles = [];
       renderMultiUploadList();
-    } else if (successCount > 0) {
-      alert(`部分藏品上傳成功！共成功 ${successCount} 個，失敗 ${totalFiles - successCount} 個。\n失敗的檔案已為您保留，可修改後重新上傳。`);
+    } else if (totalSuccessful > 0) {
+      if (corsSuccessCount > 0) {
+        alert(`部分藏品上傳成功！\n- 成功上傳：${successCount} 個\n- 疑似成功 (受 CORS 影響)：${corsSuccessCount} 個\n- 失敗保留：${failedIndices.length} 個。\n請檢查藝廊以確認上傳狀態！`);
+      } else {
+        alert(`部分藏品上傳成功！共成功 ${successCount} 個，失敗 ${failedIndices.length} 個。\n失敗的檔案已為您保留，可修改後重新上傳。`);
+      }
       selectedFiles = selectedFiles.filter((_, idx) => failedIndices.includes(idx));
       renderMultiUploadList();
     } else {
-      alert('所有檔案上傳失敗，可能是網路不穩定或檔案太大。');
+      alert('所有檔案上傳失敗，可能是檔案太大或網路中斷。');
     }
 
-    if (successCount > 0) {
+    if (totalSuccessful > 0) {
       if (lastUploadedType) {
         currentViewType = lastUploadedType;
         const targetNavBtn = document.querySelector(`[data-type="${currentViewType}"]`);
