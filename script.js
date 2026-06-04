@@ -1343,3 +1343,16 @@ function initIosShortcutButton() {
 }
 initIosShortcutButton();
 
+// ==========================================================================
+// 初始化回到頂部按鈕事件監聽
+// ==========================================================================
+function initBackToTopButton() {
+  const backToTopBtn = document.getElementById('backToTopBtn');
+  if (backToTopBtn) {
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+}
+initBackToTopButton();
+

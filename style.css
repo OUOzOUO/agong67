@@ -1421,3 +1421,40 @@ video.card-media {
   margin: 0 auto;
 }
 
+/* --- 右下角回到頂部按鈕 (縮小 20%) --- */
+.back-to-top {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  font-size: 16px;
+  color: var(--main-color);
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  border: 2px solid var(--main-color);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transition: var(--transition-base);
+  z-index: 90;
+}
+
+.back-to-top:hover {
+  background: var(--main-color);
+  color: white;
+  transform: scale(1.1) translateY(-5px);
+}
+
+@media (max-width: 768px) {
+  .back-to-top {
+    bottom: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+}
+
