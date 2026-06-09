@@ -881,6 +881,7 @@ video.card-media {
 
 .role-badge.member { background: #d4efdf; color: #27ae60; }
 .role-badge.guest { background: #fadbd8; color: #c0392b; }
+.role-badge.svip { background: #fdebd0; color: #d35400; }
 
 .action-btn {
   padding: 8px 15px;
@@ -1456,5 +1457,44 @@ video.card-media {
     height: 35px;
     font-size: 14px;
   }
+}
+
+/* ==========================================================================
+   自訂滾動條：使滑軌與滑塊寬度適中、色彩和諧、在所有瀏覽器都極易點擊與拖動
+   ========================================================================== */
+/* Webkit 核心瀏覽器 (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 12px;  /* 寬度足夠，極易點擊與拖拉 */
+  height: 12px; /* 水平滾動條高度 */
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03); /* 極淡的滑軌背景，保持版面乾淨 */
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(26, 94, 99, 0.25); /* 預設使用復古深青色半透明 */
+  border-radius: 6px;
+  border: 3px solid transparent; /* 利用透明邊框與 clip 做出間距質感 */
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+/* 滑鼠懸停於滑塊上時，加深顏色便於識別 */
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--main-color);
+  border: 2px solid transparent; /* 懸停時微變大，更好點擊 */
+}
+
+/* 點擊並拖動滑塊時的動態效果 */
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent-color); /* 拖動時變成琥珀橘，增加動態回饋 */
+}
+
+/* Firefox 瀏覽器支援 */
+html {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(26, 94, 99, 0.3) rgba(0, 0, 0, 0.03);
 }
 

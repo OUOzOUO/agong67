@@ -38,7 +38,8 @@ const uploadNavBtn = document.querySelector('[data-target="uploadView"]');
 let isRegisterMode = false; 
 
 function isGuest() { return currentUser.role === 'guest'; }
-function isMember() { return currentUser.role === 'member' || currentUser.role === 'admin'; }
+function isMember() { return currentUser.role === 'member' || currentUser.role === 'svip' || currentUser.role === 'admin'; }
+function isSvip() { return currentUser.role === 'svip'; }
 function isAdmin() { return currentUser.role === 'admin'; }
 
 // --- 密碼格式檢查器 (4~20碼英數字) ---
@@ -62,10 +63,12 @@ function updateAuthUI() {
       uploadNavBtn.title = '請先登入並獲得權限才能上傳藏品喔！';
     }
   } else {
-    // 判斷身份：如果是 admin 就是大總管，如果是 member 就是 VIP，其餘有登入但沒權限的稱為「有登入的人」
+    // 判斷身份：如果是 admin 就是大總管，如果是 svip 就是尊爵 VIP，如果是 member 就是 VIP，其餘有登入但沒權限的稱為「有登入的人」
     let roleText = '🤓 有登入的人';
     if (currentUser.role === 'admin') {
       roleText = '👑 超級大總管';
+    } else if (currentUser.role === 'svip') {
+      roleText = '🔥 尊爵 VIP';
     } else if (currentUser.role === 'member') {
       roleText = '💎 VIP 會員';
     }
@@ -87,9 +90,9 @@ function updateAuthUI() {
     if (loginNavBtn) loginNavBtn.style.display = 'none';
     if (logoutNavBtn) logoutNavBtn.style.display = 'flex';
     
-    // 只有真正的會員或大總管才可以點擊上傳
+    // 只有真正的會員、特級會員或大總管才可以點擊上傳
     if (uploadNavBtn) {
-      if (currentUser.role === 'member' || currentUser.role === 'admin') {
+      if (currentUser.role === 'member' || currentUser.role === 'svip' || currentUser.role === 'admin') {
         uploadNavBtn.style.opacity = '1';
         uploadNavBtn.style.cursor = 'pointer';
         uploadNavBtn.title = '歡迎貢獻藏品！';
@@ -104,7 +107,7 @@ function updateAuthUI() {
       adminNavBtn.style.display = isAdmin() ? 'flex' : 'none';
     }
     if (uploaderManageNavBtn) {
-      uploaderManageNavBtn.style.display = (currentUser.role === 'member') ? 'flex' : 'none';
+      uploaderManageNavBtn.style.display = (currentUser.role === 'member' || currentUser.role === 'svip') ? 'flex' : 'none';
     }
   }
 

@@ -20,6 +20,9 @@ let selectedFiles = [];
 let uploaderLoadedMemes = [];
 let uploaderCurrentType = 'image';
 
+// 尊爵專屬標籤設定：只要標籤中包含 "svip"，即變為尊爵限定 (不分大小寫)
+window.SVIP_ONLY_TAGS = ['svip'];
+
 // Helper to escape HTML characters
 function escapeHtml(str) {
   if (!str) return '';
@@ -144,7 +147,12 @@ function renderMultiUploadList() {
   if (fileTypeBadge) fileTypeBadge.style.display = 'none';
   
   if (fileNameDisplay) {
-    fileNameDisplay.innerText = `📄 已選擇 ${selectedFiles.length} 個檔案`;
+    const hasSuccessItems = selectedFiles.some(item => item.status === 'success');
+    let clearSuccessHtml = '';
+    if (hasSuccessItems) {
+      clearSuccessHtml = `<button type="button" class="clear-success-btn" onclick="clearSuccessfulFiles()" style="margin-left: 10px; padding: 4px 8px; background: #2ecc71; color: white; border: none; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: background 0.2s;"><i class="fas fa-trash-alt"></i> 清除已成功項目</button>`;
+    }
+    fileNameDisplay.innerHTML = `📄 已選擇 ${selectedFiles.length} 個檔案${clearSuccessHtml}`;
     fileNameDisplay.style.color = "#1a5e63";
   }
 
@@ -159,27 +167,50 @@ function renderMultiUploadList() {
     const safeQuote = escapeHtml(item.quote);
     const safeTags = escapeHtml(item.tags);
 
+    // 依據不同狀態加上對應的卡片樣式與狀態徽章
+    let borderStyle = '';
+    let statusLabel = '<span class="item-status status-pending" style="font-size:0.8rem; color:#7f8c8d; font-weight:bold; padding:2px 8px; background:#f0f0f0; border-radius:12px;"><i class="far fa-clock"></i> 等待中</span>';
+    
+    if (item.status === 'uploading') {
+      borderStyle = 'border-color: #f39c12; box-shadow: 0 0 8px rgba(243,156,18,0.2);';
+      statusLabel = '<span class="item-status status-uploading" style="font-size:0.8rem; color:#f39c12; font-weight:bold; padding:2px 8px; background:rgba(243,156,18,0.1); border-radius:12px;"><i class="fas fa-spinner fa-spin"></i> 上傳中...</span>';
+    } else if (item.status === 'success') {
+      borderStyle = 'border-color: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.2);';
+      statusLabel = '<span class="item-status status-success" style="font-size:0.8rem; color:#2ecc71; font-weight:bold; padding:2px 8px; background:rgba(46,204,113,0.1); border-radius:12px;"><i class="fas fa-check-circle"></i> 成功</span>';
+    } else if (item.status === 'error') {
+      borderStyle = 'border-color: #e74c3c; box-shadow: 0 0 8px rgba(231,76,60,0.2);';
+      statusLabel = `<span class="item-status status-error" title="${escapeHtml(item.errorMessage)}" style="font-size:0.8rem; color:#e74c3c; font-weight:bold; padding:2px 8px; background:rgba(231,76,60,0.1); border-radius:12px; cursor:help;"><i class="fas fa-exclamation-circle"></i> 失敗</span>`;
+    }
+
+    if (borderStyle) {
+      card.setAttribute('style', borderStyle);
+    }
+
     card.innerHTML = `
       <div class="item-header">
         <span class="item-name" title="${safeName}">${safeName}</span>
-        <span class="${item.badgeClass}" style="margin: 0;">${item.badgeText}</span>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <button type="button" class="item-preview-btn" onclick="previewSelectedFile(${index})" title="預覽此檔案">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button type="button" class="item-remove-btn" onclick="removeSelectedFile(${index})" title="移除此檔案">
-            <i class="fas fa-times"></i>
-          </button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          ${statusLabel}
+          <span class="${item.badgeClass}" style="margin: 0;">${item.badgeText}</span>
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <button type="button" class="item-preview-btn" onclick="previewSelectedFile(${index})" title="預覽此檔案">
+              <i class="fas fa-eye"></i>
+            </button>
+            ${item.status !== 'success' ? `
+            <button type="button" class="item-remove-btn" onclick="removeSelectedFile(${index})" title="移除此檔案">
+              <i class="fas fa-times"></i>
+            </button>` : ''}
+          </div>
         </div>
       </div>
-      <div class="item-body">
+      <div class="item-body" ${item.status === 'success' ? 'style="opacity: 0.6; pointer-events: none;"' : ''}>
         <div class="input-group">
           <label>檔案名稱</label>
-          <input type="text" class="item-quote-input" data-index="${index}" value="${safeQuote}" placeholder="請輸入檔案名稱">
+          <input type="text" class="item-quote-input" data-index="${index}" value="${safeQuote}" placeholder="請輸入檔案名稱" ${item.status === 'success' ? 'disabled' : ''}>
         </div>
         <div class="input-group">
           <label>關鍵字 (標籤)</label>
-          <input type="text" class="item-tags-input" data-index="${index}" value="${safeTags}" placeholder="標籤，可用空格或逗號隔開">
+          <input type="text" class="item-tags-input" data-index="${index}" value="${safeTags}" placeholder="標籤，可用空格或逗號隔開" ${item.status === 'success' ? 'disabled' : ''}>
         </div>
       </div>
     `;
@@ -188,13 +219,17 @@ function renderMultiUploadList() {
     const quoteIn = card.querySelector('.item-quote-input');
     const tagsIn = card.querySelector('.item-tags-input');
 
-    quoteIn.addEventListener('input', (e) => {
-      selectedFiles[index].quote = e.target.value;
-    });
+    if (quoteIn) {
+      quoteIn.addEventListener('input', (e) => {
+        selectedFiles[index].quote = e.target.value;
+      });
+    }
 
-    tagsIn.addEventListener('input', (e) => {
-      selectedFiles[index].tags = e.target.value;
-    });
+    if (tagsIn) {
+      tagsIn.addEventListener('input', (e) => {
+        selectedFiles[index].tags = e.target.value;
+      });
+    }
 
     multiUploadList.appendChild(card);
   });
@@ -202,6 +237,11 @@ function renderMultiUploadList() {
 
 window.removeSelectedFile = function(index) {
   selectedFiles.splice(index, 1);
+  renderMultiUploadList();
+};
+
+window.clearSuccessfulFiles = function() {
+  selectedFiles = selectedFiles.filter(item => item.status !== 'success');
   renderMultiUploadList();
 };
 
@@ -293,7 +333,10 @@ if (imageInput) {
     }
 
     const isUserAdmin = typeof isAdmin === 'function' && isAdmin();
-    const maxFiles = isUserAdmin ? Infinity : 5;
+    const isUserSvip = typeof isSvip === 'function' && isSvip();
+    const hasUnlimitedUpload = isUserAdmin || isUserSvip;
+    
+    const maxFiles = hasUnlimitedUpload ? Infinity : 5;
     if (selectedFiles.length + files.length > maxFiles) {
       alert(`最多只能同時選擇 ${maxFiles} 個檔案！`);
       imageInput.value = '';
@@ -319,7 +362,7 @@ if (imageInput) {
         badgeClass = 'file-type-badge badge-video';
       }
 
-      if (!isUserAdmin && file.size > maxSizeMB * 1024 * 1024) {
+      if (!hasUnlimitedUpload && file.size > maxSizeMB * 1024 * 1024) {
         alert(`檔案「${file.name}」太大了！此類型檔案（${uploadType === 'image' ? '靜態圖片' : '影片/動圖'}）最大限制為 ${maxSizeMB}MB！`);
         continue;
       }
@@ -330,7 +373,9 @@ if (imageInput) {
         tags: '',
         type: uploadType,
         badgeText: badgeText,
-        badgeClass: badgeClass
+        badgeClass: badgeClass,
+        status: 'pending',
+        errorMessage: ''
       });
     }
 
@@ -341,17 +386,36 @@ if (imageInput) {
 
 if (uploadButton) {
   uploadButton.addEventListener('click', async () => {
-    if (selectedFiles.length === 0) {
-      alert('請先選擇檔案！');
+    // 篩選出需要上傳的檔案索引 (狀態不為 success 的檔案)
+    const pendingIndices = [];
+    for (let i = 0; i < selectedFiles.length; i++) {
+      if (selectedFiles[i].status !== 'success') {
+        pendingIndices.push(i);
+      }
+    }
+
+    if (pendingIndices.length === 0) {
+      alert('所有檔案皆已成功上傳！');
       return;
     }
 
     uploadButton.disabled = true;
-    const totalFiles = selectedFiles.length;
+    const totalToUpload = pendingIndices.length;
     let successCount = 0;
     let corsSuccessCount = 0; // 追蹤因瀏覽器 CORS 重新導向攔截導致的偽失敗
-    let failedIndices = [];
+    let failedCount = 0;
     let lastUploadedType = null;
+
+    // 螢幕鎖定控制 (Wake Lock)
+    let wakeLock = null;
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log("螢幕喚醒鎖定已啟用，防止手機進入休眠。");
+      }
+    } catch (wlErr) {
+      console.warn("無法取得螢幕喚醒鎖定:", wlErr);
+    }
 
     const readFileAsDataURL = (file) => {
       return new Promise((resolve, reject) => {
@@ -362,9 +426,16 @@ if (uploadButton) {
       });
     };
 
-    for (let i = 0; i < totalFiles; i++) {
-      const item = selectedFiles[i];
-      uploadButton.innerText = `正在上傳第 ${i + 1}/${totalFiles} 個檔案... (影片需要等待較久)`;
+    for (let k = 0; k < totalToUpload; k++) {
+      const idx = pendingIndices[k];
+      const item = selectedFiles[idx];
+
+      // 更新狀態為上傳中，並即時更新 UI
+      item.status = 'uploading';
+      item.errorMessage = '';
+      renderMultiUploadList();
+
+      uploadButton.innerText = `正在上傳第 ${k + 1}/${totalToUpload} 個檔案... (影片需要等待較久)`;
 
       try {
         const base64Data = await readFileAsDataURL(item.file);
@@ -401,11 +472,15 @@ if (uploadButton) {
 
         const result = await response.json();
         if (result.status === 'success') {
+          item.status = 'success';
+          item.errorMessage = '';
           successCount++;
           lastUploadedType = item.type;
         } else {
           console.error(`檔案「${item.file.name}」上傳失敗:`, result.message);
-          failedIndices.push(i);
+          item.status = 'error';
+          item.errorMessage = result.message || '上傳失敗';
+          failedCount++;
         }
       } catch (err) {
         console.error(`檔案「${item.file.name}」上傳出錯:`, err);
@@ -414,35 +489,43 @@ if (uploadButton) {
                                err.message.toLowerCase().includes('fetch') || 
                                err.message.toLowerCase().includes('network');
         if (isNetworkError) {
-          console.warn(`⚠️ 偵測到 CORS / 網路通訊異常，但該檔案在雲端極可能已上傳成功，在此將其視為疑似成功處理。`);
+          console.warn(`⚠️ 偵測到 CORS / 網路通訊異常，但該檔案在雲端極可能已上傳成功，在此將其視為成功處理。`);
+          item.status = 'success';
+          item.errorMessage = '';
           corsSuccessCount++;
           lastUploadedType = item.type;
         } else {
-          failedIndices.push(i);
+          item.status = 'error';
+          item.errorMessage = err.message || '網路通訊失敗';
+          failedCount++;
         }
+      }
+
+      // 更新該單一檔案的完成狀態 UI
+      renderMultiUploadList();
+    }
+
+    // 釋放螢幕喚醒鎖定
+    if (wakeLock) {
+      try {
+        await wakeLock.release();
+        wakeLock = null;
+        console.log("螢幕喚醒鎖定已釋放。");
+      } catch (releaseErr) {
+        console.error("釋放螢幕鎖定出錯:", releaseErr);
       }
     }
 
     const totalSuccessful = successCount + corsSuccessCount;
 
-    if (failedIndices.length === 0) {
+    if (failedCount === 0) {
       if (corsSuccessCount > 0) {
-        alert('所有藏品已完成上傳！\n⚠️ 提示：部分檔案在傳回結果時受瀏覽器安全限制 (CORS) 影響，但雲端極可能已儲存成功。請檢查首頁藝廊是否已載入新藏品。');
+        alert('所有選定項目已處理完畢！\n⚠️ 提示：部分檔案受瀏覽器安全限制 (CORS) 影響，但雲端極可能已儲存成功。請檢查首頁藝廊。');
       } else {
-        alert('所有藏品上傳成功！');
+        alert('所有檔案上傳成功！');
       }
-      selectedFiles = [];
-      renderMultiUploadList();
-    } else if (totalSuccessful > 0) {
-      if (corsSuccessCount > 0) {
-        alert(`部分藏品上傳成功！\n- 成功上傳：${successCount} 個\n- 疑似成功 (受 CORS 影響)：${corsSuccessCount} 個\n- 失敗保留：${failedIndices.length} 個。\n請檢查藝廊以確認上傳狀態！`);
-      } else {
-        alert(`部分藏品上傳成功！共成功 ${successCount} 個，失敗 ${failedIndices.length} 個。\n失敗的檔案已為您保留，可修改後重新上傳。`);
-      }
-      selectedFiles = selectedFiles.filter((_, idx) => failedIndices.includes(idx));
-      renderMultiUploadList();
     } else {
-      alert('所有檔案上傳失敗，可能是檔案太大或網路中斷。');
+      alert(`上傳作業已結束。\n- 成功：${totalSuccessful} 個\n- 失敗：${failedCount} 個\n\n失敗的檔案已為您標示「紅色邊框與失敗圖示」，您可以直接修改失敗檔案的名稱/標籤，或直接再次點選「確定上傳藏品」以重新上傳失敗的檔案！`);
     }
 
     if (totalSuccessful > 0) {
@@ -894,9 +977,22 @@ function renderGallery() {
 
   const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
+  const isUserSvipOrAdmin = currentUser && (currentUser.role === 'svip' || currentUser.role === 'admin');
+
   const filteredMemes = allMemes.filter(meme => {
     const itemType = meme.type || 'image';
     if (itemType !== currentViewType) return false;
+
+    // 檢查是否有尊爵專屬標籤 (依據 window.SVIP_ONLY_TAGS 設定項目)
+    const isSvipOnly = Array.isArray(meme.tags) && meme.tags.some(tag => {
+      const t = String(tag).trim().toLowerCase();
+      return Array.isArray(window.SVIP_ONLY_TAGS) && window.SVIP_ONLY_TAGS.some(st => String(st).trim().toLowerCase() === t);
+    });
+
+    if (isSvipOnly && !isUserSvipOrAdmin) {
+      return false; // 非尊爵/大總管，直接過濾隱藏
+    }
+
     return window.matchMemeQuery(meme, keyword);
   });
 
@@ -953,7 +1049,19 @@ if (searchInput && searchClearBtn) {
 const randomCopyBtn = document.getElementById('randomCopyBtn');
 if (randomCopyBtn) {
   randomCopyBtn.addEventListener('click', async () => {
-    const imageMemes = allMemes.filter(m => (m.type || 'image') === 'image');
+    const isUserSvipOrAdmin = currentUser && (currentUser.role === 'svip' || currentUser.role === 'admin');
+    const imageMemes = allMemes.filter(m => {
+      const isImg = (m.type || 'image') === 'image';
+      if (!isImg) return false;
+
+      const isSvipOnly = Array.isArray(m.tags) && m.tags.some(tag => {
+        const t = String(tag).trim().toLowerCase();
+        return Array.isArray(window.SVIP_ONLY_TAGS) && window.SVIP_ONLY_TAGS.some(st => String(st).trim().toLowerCase() === t);
+      });
+
+      if (isSvipOnly && !isUserSvipOrAdmin) return false;
+      return true;
+    });
     if (imageMemes.length === 0) {
       alert('目前沒有照片可供隨機複製！');
       return;

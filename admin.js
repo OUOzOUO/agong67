@@ -88,21 +88,32 @@ function renderAdminUsers(users) {
   }
 
   targetUsers.forEach(user => {
-    const isMember = user.role === 'member';
-    const roleBadge = isMember ? '<span class="role-badge member">💎 VIP 會員</span>' : '<span class="role-badge guest">👤 有登入的人</span>';
-    
+    let roleBadge = '';
+    let actionsHtml = '';
+
+    if (user.role === 'svip') {
+      roleBadge = '<span class="role-badge svip">🔥 尊爵 VIP</span>';
+      actionsHtml = `<button class="action-btn downgrade" style="background:#e67e22;" onclick="updateUserRole('${user.username}', 'member', event)"><i class="fas fa-arrow-down"></i> 降回 VIP 會員</button>`;
+    } else if (user.role === 'member') {
+      roleBadge = '<span class="role-badge member">💎 VIP 會員</span>';
+      actionsHtml = `
+        <button class="action-btn upgrade" style="background:#f39c12; margin-right:5px;" onclick="updateUserRole('${user.username}', 'svip', event)"><i class="fas fa-arrow-up"></i> 升級為尊爵 VIP</button>
+        <button class="action-btn downgrade" onclick="updateUserRole('${user.username}', 'guest', event)"><i class="fas fa-level-down-alt"></i> 降回一般路人</button>
+      `;
+    } else {
+      roleBadge = '<span class="role-badge guest">👤 有登入的人</span>';
+      actionsHtml = `<button class="action-btn upgrade" onclick="updateUserRole('${user.username}', 'member', event)"><i class="fas fa-level-up-alt"></i> 升級為 VIP</button>`;
+    }
+
     const card = document.createElement('div');
     card.className = 'admin-user-card';
     card.innerHTML = `
-      <div class="user-info">
+      <div class="user-info" style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
         <h3 style="margin:0; color:#1a5e63;">${user.username}</h3>
         ${roleBadge}
       </div>
       <div class="user-actions">
-        ${isMember ? 
-          `<button class="action-btn downgrade" onclick="updateUserRole('${user.username}', 'guest', event)"><i class="fas fa-level-down-alt"></i> 降回一般路人</button>` : 
-          `<button class="action-btn upgrade" onclick="updateUserRole('${user.username}', 'member', event)"><i class="fas fa-level-up-alt"></i> 升級為 VIP</button>`
-        }
+        ${actionsHtml}
       </div>
     `;
     adminUserList.appendChild(card);
@@ -110,7 +121,15 @@ function renderAdminUsers(users) {
 }
 
 window.updateUserRole = function(targetUser, newRole, event) {
-  const actionText = newRole === 'member' ? '升級為 VIP 會員' : '降級為一般使用者';
+  let actionText = '';
+  if (newRole === 'svip') {
+    actionText = '升級為尊爵 VIP 會員';
+  } else if (newRole === 'member') {
+    actionText = '調整為 VIP 會員';
+  } else {
+    actionText = '降級為一般使用者';
+  }
+  
   if (!confirm(`確定要將 ${targetUser} ${actionText} 嗎？`)) return;
 
   const btn = event.currentTarget;
@@ -131,7 +150,10 @@ window.updateUserRole = function(targetUser, newRole, event) {
   .then(res => res.json())
   .then(result => {
     if (result.status === 'success') {
-      alert(`✅ 成功！${targetUser} 現在是 ${newRole === 'member' ? 'VIP 會員' : '一般路人'} 了！`);
+      let roleNameText = '一般路人';
+      if (newRole === 'svip') roleNameText = '尊爵 VIP';
+      else if (newRole === 'member') roleNameText = 'VIP 會員';
+      alert(`✅ 成功！${targetUser} 現在是 ${roleNameText} 了！`);
       loadAdminUsers();
     } else {
       alert('❌ 操作失敗：' + result.message);
