@@ -345,7 +345,7 @@ if (uploadNavBtn) {
       alert('🛑 欸欸欸！您目前尚未登入！\n請先登入並等待管理員審核。');
       openAuthModal(); 
       if (typeof window.closeDrawerFunc === 'function') window.closeDrawerFunc();
-    } else if (currentUser.role !== 'member' && currentUser.role !== 'admin') {
+    } else if (currentUser.role !== 'member' && currentUser.role !== 'svip' && currentUser.role !== 'admin') {
       // 如果有登入，但只是「有登入的人」，也予以攔截
       e.stopImmediatePropagation();
       alert('🛑 欸欸欸！您目前的身份是「有登入的人」，尚未獲得 VIP 上傳權限！\n請聯絡管理員提升權限！');
