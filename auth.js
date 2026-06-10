@@ -355,3 +355,34 @@ if (uploadNavBtn) {
 }
 
 updateAuthUI();
+
+// ✨ 新增：頁面載入或重新整理時自動向後端同步最新權限，避免管理員在後台變更權限後使用者需要重新登入
+function syncUserRole() {
+  if (isGuest()) return;
+  
+  fetch(GAS_API_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'getUserRole',
+      username: currentUser.username
+    })
+  })
+  .then(res => res.json())
+  .then(result => {
+    if (result.status === 'success') {
+      if (result.role !== currentUser.role) {
+        console.log(`[權限同步] 偵測到權限變更：${currentUser.role} -> ${result.role}`);
+        currentUser.role = result.role;
+        localStorage.setItem('67net_user', JSON.stringify(currentUser));
+        updateAuthUI();
+        // 同步刷新藝廊，確保看到的身分限定藏品（如 SVIP 限定）即時更新
+        if (typeof window.loadGallery === 'function') {
+          window.loadGallery();
+        }
+      }
+    }
+  })
+  .catch(err => console.error("同步使用者權限失敗：", err));
+}
+
+syncUserRole();

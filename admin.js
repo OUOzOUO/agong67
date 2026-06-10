@@ -501,7 +501,7 @@ window.deleteMemeFromAdmin = function(targetUrl, event) {
 }
 
 function escapeHtml(text) {
-  return (text || '')
+  return String(text || '')
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

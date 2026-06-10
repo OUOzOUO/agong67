@@ -26,7 +26,7 @@ window.SVIP_ONLY_TAGS = ['svip'];
 // Helper to escape HTML characters
 function escapeHtml(str) {
   if (!str) return '';
-  return str
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
